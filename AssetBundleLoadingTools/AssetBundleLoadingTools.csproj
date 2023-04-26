@@ -110,6 +110,7 @@
     <Compile Include="Utilities\AssetBundleHashing.cs" />
     <Compile Include="Core\BundleCache.cs" />
     <Compile Include="Utilities\AssetBundleExtensions.cs" />
+    <Compile Include="Utilities\ShaderRepairUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="manifest.json" />
