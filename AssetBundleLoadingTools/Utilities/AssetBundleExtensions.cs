@@ -68,6 +68,12 @@ namespace AssetBundleLoadingTools.Utilities
         {
             if (gameObject == null) return;
 
+            if (!Plugin.Config.EnableCache)
+            {
+                Sanitization.SanitizeObject(gameObject);
+                return;
+            }
+
             var bundleData = BundleCache.GetCachedData(hash);
             if (bundleData == null)
             {

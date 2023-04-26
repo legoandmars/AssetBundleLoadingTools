@@ -18,11 +18,13 @@ GameObject asset = AssetBundle.LoadAssetSafe<GameObject>("assets/_example.prefab
 ```
 
 # For Developers
-TODO write pluginconfig thing here
-
+If you're planning on testing against the same model repeatedly, make sure to set `EnableCache` to false in `UserData/AssetBundleLoadingTools.json`
 # TODO:
 - Expand upon shader fixing
+- Reformat project so only the absolute necessities (some public APIs in Utilities) are static (maybe use DI too)
 - Add a web service to check for converted shaders if not downloaded locally
 - Improve caching to more accurately reflect if models are dangerous
 - Create pre-written list of safe components that never touch a UnityEvent
-- Convert reflection to something more sensible like FieldAccessors if possible
+- Convert reflection to something more sensible like FieldAccessors or ReflectionUtil if possible
+- See if the actual behaviour of LoadAssetAsync can be replicated to make the extension methods 1:1
+- Figure out if there's any non-Component/GameObject Objects that can be used to trigger a UnityEvent

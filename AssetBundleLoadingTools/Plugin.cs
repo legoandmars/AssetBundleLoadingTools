@@ -1,5 +1,9 @@
-﻿using AssetBundleLoadingTools.Core;
+﻿using AssetBundleLoadingTools.Config;
+using AssetBundleLoadingTools.Core;
 using IPA;
+using IPA.Config;
+using IPA.Config.Stores;
+using IPA.Utilities;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
@@ -16,11 +20,14 @@ namespace AssetBundleLoadingTools
         /// </summary>
         internal static IPALogger Log { get; private set; }
 
+        internal static PluginConfig Config { get; private set; }
+
         [Init]
-        public Plugin(IPALogger logger)
+        public Plugin(IPALogger logger, IPA.Config.Config config)
         {
             Instance = this;
             Log = logger;
+            Config = config.Generated<PluginConfig>();
             
             BundleCache.ReadCache();
         }
