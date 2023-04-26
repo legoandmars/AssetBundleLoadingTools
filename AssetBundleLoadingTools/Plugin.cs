@@ -4,7 +4,7 @@ using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
 {
-    // Formatted as a plugin to support adding BSML UI
+    // Formatted as a plugin to support adding future planned BSML UI & Harmony Patches
     // This could probably be made more generic but we're running on borrowed time currently
     // Really most of this (except the public APIs in Utilities) needs to be made non-static
     [Plugin(RuntimeOptions.SingleStartInit)]
@@ -28,7 +28,7 @@ namespace AssetBundleLoadingTools
         [OnStart]
         public void OnApplicationStart()
         {
-            Plugin.Log.Info("OnApplicationStart");
+
         }
 
         [OnExit]

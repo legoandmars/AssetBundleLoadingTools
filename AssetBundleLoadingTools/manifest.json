@@ -2,10 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
   "id": "AssetBundleLoadingTools",
   "name": "AssetBundleLoadingTools",
-  "author": "",
-  "version": "0.0.1",
-  "description": "",
-  "gameVersion": "1.18.3",
+  "author": "Bobbie",
+  "version": "1.0.0",
+  "description": "A library with various tools to help safely load AssetBundles and fix legacy shader issues",
+  "gameVersion": "1.29.1",
   "dependsOn": {
     "BSIPA": "^4.2.0"
   }
