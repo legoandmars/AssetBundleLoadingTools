@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
+using AssetsTools.NET;
+using AssetsTools.NET.Extra;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -23,10 +25,17 @@ namespace AssetBundleLoadingTools.Utilities
         // Then you can just do AssetBundle.LoadAllAssets<Shader>() and you're off to the races
         // I'm curious if you would run into problems with the "add a bunch of assets to the assetbundle individually" method after you started getting into the hundreds of shaders in a single file, though...
 
+        private static AssetsManager _assetsManager = new();
 
-        public static bool FixLegacyShaders(GameObject gameObject, string hash)
+        public static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             if (gameObject == null) return false;
+
+            var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+            foreach(var shaderKeywordData in keywords)
+            {
+                Debug.Log($"{shaderKeywordData.Key}: {string.Join(", ", shaderKeywordData.Value)}");
+            }
 
             List<Material> sharedMaterials = new();
 
@@ -55,6 +64,43 @@ namespace AssetBundleLoadingTools.Utilities
             return true;
         }
 
+        // Not quite the same as global keywords, this includes properties too
+        private static Dictionary<string, List<string>> LoadShaderKeywordsFromBundle(string assetBundlePath)
+        {
+            // Fairly scuffed solution using AssetsTools.NET. this might break things, but it's the only reasonable option unless somebody can figure out how to get the data from DirectX using native code
+
+            var bundle = _assetsManager.LoadBundleFile(assetBundlePath, true);
+            var assetsFileInstance = _assetsManager.LoadAssetsFileFromBundle(bundle, 0, false);
+            var assetsFile = assetsFileInstance.file;
+
+            Dictionary<string, List<string>> keywords = new();
+
+            foreach (var shaderInfo in assetsFile.GetAssetsOfType(AssetClassID.Shader))
+            {
+                var shaderBase = _assetsManager.GetBaseField(assetsFileInstance, shaderInfo);
+
+                var shaderName = shaderBase["m_ParsedForm"]["m_Name"].AsString;
+                keywords[shaderName] = new List<string>();
+
+                var subShaders = shaderBase["m_ParsedForm"]["m_SubShaders.Array"].Children;
+                foreach(var subShader in subShaders)
+                {
+                    var passes = subShader["m_Passes.Array"].Children;
+                    foreach(var pass in passes)
+                    {
+                        var nameIndices = pass["m_NameIndices.Array"].Children;
+                        foreach(var nameIndex in nameIndices)
+                        {
+                            var keywordName = nameIndex["first"].AsString;
+                            if(!keywords[shaderName].Contains(keywordName)) keywords[shaderName].Add(keywordName);
+                        }
+                    }
+                }
+            }
+
+            return keywords;
+        }
+
         private static bool ShaderSupported(Shader shader)
         {
             // Honestly i'm not really sure how to do this!
@@ -72,7 +118,7 @@ namespace AssetBundleLoadingTools.Utilities
             return true;
         }
 
-        public static bool FixAndDownloadLegacyShaders(GameObject gameObject, string hash)
+        public static bool FixAndDownloadLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             // unimplemented
             // hopefully this will eventually:
@@ -89,7 +135,7 @@ namespace AssetBundleLoadingTools.Utilities
             // Hash, List<Shader> = (ShaderName, List<Properties>)
             // Properties list is very important because some people edit shaders with the same name to have slightly different properties based on usecase
 
-            return FixLegacyShaders(gameObject, hash);
+            return FixLegacyShaders(gameObject, assetBundlePath, hash);
         }
     }
 }
