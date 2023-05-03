@@ -16,13 +16,15 @@ namespace AssetBundleLoadingTools.Models.Shader
         public List<ShaderVRPlatform> Platforms { get; set; }
 
         // TODO: "matching shader" check
+        public bool ReplacementExistsLocally { get; set; }
 
         [JsonConstructor]
-        public CompiledShaderInfo(string name, List<ShaderProperty> properties, List<ShaderVRPlatform> platforms)
+        public CompiledShaderInfo(string name, List<ShaderProperty> properties, List<ShaderVRPlatform> platforms, bool replacementExistsLocally)
         {
             Name = name;
             Properties = properties;
             Platforms = platforms;
+            ReplacementExistsLocally = replacementExistsLocally;
         }
 
         // could eventually need variant/subshader/pass info if there's collisions

@@ -29,7 +29,7 @@ namespace AssetBundleLoadingTools
             Log = logger;
             Config = config.Generated<PluginConfig>();
             
-            BundleCache.ReadCache();
+            Caching.ReadCache();
         }
 
         [OnStart]

@@ -11,14 +11,12 @@ namespace AssetBundleLoadingTools.Models
     public class BundleData
     {
         public string Path { get; set; }
-        public string Hash { get; set; }
         public bool IsDangerous { get; set; }
 
         [JsonConstructor]
-        public BundleData(string path, string hash, bool isDangerous)
+        public BundleData(string path, bool isDangerous)
         {
             Path = path;
-            Hash = hash;
             IsDangerous = isDangerous;
         }
     }

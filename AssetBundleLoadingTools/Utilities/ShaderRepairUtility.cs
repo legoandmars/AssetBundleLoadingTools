@@ -35,37 +35,64 @@ namespace AssetBundleLoadingTools.Utilities
         {
             if (gameObject == null) return false;
 
+            bool fixable = true;
             var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
-            foreach(var shaderKeywordData in keywords)
+            foreach (var shaderKeywordData in keywords)
             {
                 Debug.Log($"{shaderKeywordData.Key}: {string.Join(", ", shaderKeywordData.Value)}");
             }
 
             List<Material> sharedMaterials = new();
+            List<Shader> loadedShaders = new();
 
+            // TODO: Is there anything that uses shaders that isn't a renderer?
             foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
             {
                 if (renderer == null) continue;
                 foreach (var material in renderer.sharedMaterials)
                 {
                     if (material != null && material.shader != null && !sharedMaterials.Contains(material)) sharedMaterials.Add(material);
+                    if (material != null && material.shader != null && !loadedShaders.Contains(material.shader)) loadedShaders.Add(material.shader);
                 }
-            
             }
 
+            Dictionary<Shader, Shader> shaderReplacementInfo = new();
+            for (int i = 0; i < loadedShaders.Count; i++)
+            {
+                var shader = loadedShaders[i];
+                // TODO implement cache
+                var shaderInfo = GetShaderInfo(shader, keywords);
+                // unneeded if already SPI
+                if (shaderInfo.Platforms.Contains(ShaderVRPlatform.SinglePassInstanced)) continue;
+
+                var replacement = GetShaderReplacement(shaderInfo);
+                if (replacement == null)
+                {
+                    // TODO: maybe return a list of "unfixable" shaders?
+                    fixable = false;
+                    continue;
+                }
+
+                shaderInfo.ReplacementExistsLocally = true;
+                shaderReplacementInfo.Add(shader, replacement);
+            }
+
+            // final "shader replacement" pass
             foreach (var material in sharedMaterials)
             {
-                var shader = material.shader;
-
-                if (!ShaderSupported(shader))
+                if (shaderReplacementInfo.TryGetValue(material.shader, out Shader replacementShader))
                 {
-                    // TODO: replace shader
-                    // below could come in useful for shader keyword checking? idk
-                    //shader.keywordSpace.keywordNames
+                    material.shader = replacementShader;
                 }
             }
 
-            return true;
+            return fixable;
+        }
+
+        private static Shader? GetShaderReplacement(CompiledShaderInfo shaderInfo)
+        {
+            // unimplemented
+            return null;
         }
 
         // Not quite the same as global keywords, this includes properties too
@@ -113,7 +140,7 @@ namespace AssetBundleLoadingTools.Utilities
                 properties.Add(new(shader.GetPropertyName(i), shader.GetPropertyDescription(i), shader.GetPropertyType(i)));
             }
 
-            return new CompiledShaderInfo(shader.name, properties, GetVRPlatforms(shader, keywords));
+            return new CompiledShaderInfo(shader.name, properties, GetVRPlatforms(shader, keywords), false);
         }
 
         // can remove keywords property if we use Toni's method

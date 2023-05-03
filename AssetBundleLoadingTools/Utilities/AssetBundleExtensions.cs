@@ -3,6 +3,7 @@ using AssetBundleLoadingTools.Models;
 using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Caching = AssetBundleLoadingTools.Core.Caching;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -13,7 +14,7 @@ namespace AssetBundleLoadingTools.Utilities
             var asset = bundle.LoadAsset<T>(path);
             var gameObject = GameObjectFromAsset(asset);
 
-            CacheAndSanitizeObject(hash, gameObject);
+            CacheAndSanitizeObject(gameObject, path, hash);
 
             return asset;
            //var manifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
@@ -31,7 +32,7 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 var gameObject = GameObjectFromAsset(assetLoadRequest.asset);
 
-                CacheAndSanitizeObject(hash, gameObject);
+                CacheAndSanitizeObject(gameObject, path, hash);
 
                 completion.SetResult(assetLoadRequest.asset as T);
             };
@@ -64,7 +65,7 @@ namespace AssetBundleLoadingTools.Utilities
             return gameObject;
         }
 
-        private static void CacheAndSanitizeObject(string hash, GameObject gameObject)
+        private static void CacheAndSanitizeObject(GameObject gameObject, string path, string hash)
         {
             if (gameObject == null) return;
 
@@ -74,17 +75,17 @@ namespace AssetBundleLoadingTools.Utilities
                 return;
             }
 
-            var bundleData = BundleCache.GetCachedData(hash);
+            var bundleData = Caching.GetCachedBundleData(hash);
             if (bundleData == null)
             {
                 var isDangerous = Sanitization.SanitizeObject(gameObject);
 
                 if (bundleData == null)
                 {
-                    bundleData = new BundleData(isDangerous);
+                    bundleData = new BundleData(path, isDangerous);
                 }
 
-                BundleCache.AddToCache(hash, bundleData);
+                Caching.AddBundleDataToCache(hash, bundleData);
             }
             else if (bundleData.IsDangerous)
             {

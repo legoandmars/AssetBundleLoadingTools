@@ -24,6 +24,9 @@ namespace AssetBundleLoadingTools.Core
 
         private static ConcurrentDictionary<string, BundleData> _cachedBundleData = new();
 
+        // TODO: r/w more smart to avoid unnecessary disk
+        // maybe a 1 second timer or on quit or something
+
         internal static void ReadCache()
         {
             if (File.Exists(_cachedBundleDataPath))
@@ -43,7 +46,7 @@ namespace AssetBundleLoadingTools.Core
             File.WriteAllText(_cachedBundleDataPath, JsonConvert.SerializeObject(_cachedBundleData));
         }
 
-        internal static void AddToCache(string hash, BundleData data)
+        internal static void AddBundleDataToCache(string hash, BundleData data)
         {
             if (_cachedBundleData.TryGetValue(hash, out BundleData existingData))
             {
@@ -66,7 +69,7 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
-        internal static BundleData? GetCachedData(string hash)
+        internal static BundleData? GetCachedBundleData(string hash)
         {
             if (_cachedBundleData.TryGetValue(hash, out BundleData data))
             {
@@ -76,6 +79,17 @@ namespace AssetBundleLoadingTools.Core
             {
                 return null;
             }
+        }
+
+        // interoperability between caches
+        internal static string? GetHashFromPath(string path)
+        {
+            foreach (var pair in _cachedBundleData)
+            {
+                if (pair.Value.Path == path) return pair.Key;
+            }
+
+            return null;
         }
     }
 }
