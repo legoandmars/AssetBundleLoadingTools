@@ -10,11 +10,15 @@ namespace AssetBundleLoadingTools.Models
     [Serializable]
     public class BundleData
     {
-        public bool IsDangerous;
+        public string Path { get; set; }
+        public string Hash { get; set; }
+        public bool IsDangerous { get; set; }
 
         [JsonConstructor]
-        public BundleData(bool isDangerous)
+        public BundleData(string path, string hash, bool isDangerous)
         {
+            Path = path;
+            Hash = hash;
             IsDangerous = isDangerous;
         }
     }

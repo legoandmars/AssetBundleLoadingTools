@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using AssetBundleLoadingTools.Models.Shader;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -24,6 +25,9 @@ namespace AssetBundleLoadingTools.Utilities
         // It would almost certainly be better to have a format that's just directly adding a bunch of different shaders to the assetbundle when building in editor
         // Then you can just do AssetBundle.LoadAllAssets<Shader>() and you're off to the races
         // I'm curious if you would run into problems with the "add a bunch of assets to the assetbundle individually" method after you started getting into the hundreds of shaders in a single file, though...
+
+        private const string _singlePassKeyword = "UNITY_SINGLE_PASS_STEREO";
+        private const string _singlePassInstancedKeyword = "STEREO_INSTANCING_ON";
 
         private static AssetsManager _assetsManager = new();
 
@@ -101,8 +105,49 @@ namespace AssetBundleLoadingTools.Utilities
             return keywords;
         }
 
+        private static CompiledShaderInfo GetShaderInfo(Shader shader, Dictionary<string, List<string>> keywords) {
+            List<ShaderProperty> properties = new();
+
+            for (int i = 0; i < shader.GetPropertyCount(); i++)
+            {
+                properties.Add(new(shader.GetPropertyName(i), shader.GetPropertyDescription(i), shader.GetPropertyType(i)));
+            }
+
+            return new CompiledShaderInfo(shader.name, properties, GetVRPlatforms(shader, keywords));
+        }
+
+        // can remove keywords property if we use Toni's method
+        private static List<ShaderVRPlatform> GetVRPlatforms(Shader shader, Dictionary<string, List<string>> keywords)
+        {
+            if (keywords.TryGetValue(shader.name, out List<string> properties))
+            {
+                var platforms = new List<ShaderVRPlatform>();
+
+                if (properties.Contains(_singlePassKeyword)) platforms.Add(ShaderVRPlatform.SinglePass);
+                if (properties.Contains(_singlePassInstancedKeyword)) platforms.Add(ShaderVRPlatform.SinglePassInstanced);
+
+                return platforms;
+            }
+            else
+            {
+                return new();
+            }
+        }
+
         private static bool ShaderSupported(Shader shader)
         {
+
+            Debug.Log(shader.name);
+            int propertyCount = shader.GetPropertyCount();
+            for (int i = 0; i < propertyCount; i++)
+            {
+                string propertyName = shader.GetPropertyName(i);
+                ShaderPropertyType propertyType = shader.GetPropertyType(i);
+                string displayName = shader.GetPropertyDescription(i);
+
+                Debug.Log($"{propertyName} ({displayName}): {propertyType}");
+            }
+
             // Honestly i'm not really sure how to do this!
             // The built in shader properties like isSupported don't quite work for what we need
             // So we need to actually check the keywords the shader was compiled against...
