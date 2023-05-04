@@ -11,6 +11,7 @@ namespace AssetBundleLoadingTools.Models.Shader
     public class ReplacementShaderInfo
     {
         public string Name { get; set; }
+        public string BundlePath { get; set; }
         public List<ShaderProperty> Properties { get; set; }
 
         public List<ShaderVRPlatform> Platforms { get; set; }
