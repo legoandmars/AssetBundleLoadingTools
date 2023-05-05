@@ -8,21 +8,27 @@ using UnityEngine.Rendering;
 
 namespace AssetBundleLoadingTools.Models.Shader
 {
-    [System.Serializable]
+    [Serializable]
     public class ShaderProperty
     {
+        [JsonProperty]
         public string Name { get; set; }
-        public string DisplayName { get; set; }
+
+        [JsonProperty]
+        public string DisplayName { get; set; } // Unsure if this is actually needed for comparisons. It did catch a different shader ONCE. Probably better to have too much data than not enough
+
+        [JsonProperty]
         public ShaderPropertyType PropertyType { get; set; } // might be a good idea to avoid directly referencing Unity assemblies for models, depending on what these end up being used in
 
-        // More data **might** be needed, but for comparison purposes this *should* be enough
-
-        [JsonConstructor]
+        // Default property value needed?
         public ShaderProperty(string name, string displayName, ShaderPropertyType propertyType)
         {
             Name = name;
             DisplayName = displayName;
             PropertyType = propertyType;
         }
+
+        [JsonConstructor]
+        public ShaderProperty() { }
     }
 }

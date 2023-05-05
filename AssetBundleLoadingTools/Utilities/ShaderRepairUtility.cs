@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using AssetBundleLoadingTools.Models.Shader;
+using AssetBundleLoadingTools.Core;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -26,9 +27,6 @@ namespace AssetBundleLoadingTools.Utilities
         // Then you can just do AssetBundle.LoadAllAssets<Shader>() and you're off to the races
         // I'm curious if you would run into problems with the "add a bunch of assets to the assetbundle individually" method after you started getting into the hundreds of shaders in a single file, though...
 
-        private const string _singlePassKeyword = "UNITY_SINGLE_PASS_STEREO";
-        private const string _singlePassInstancedKeyword = "STEREO_INSTANCING_ON";
-
         private static AssetsManager _assetsManager = new();
 
         public static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
@@ -44,6 +42,7 @@ namespace AssetBundleLoadingTools.Utilities
 
             List<Material> sharedMaterials = new();
             List<Shader> loadedShaders = new();
+            List<CompiledShaderInfo> compiledShaderInfos = new();
 
             // TODO: Is there anything that uses shaders that isn't a renderer?
             foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
@@ -51,6 +50,14 @@ namespace AssetBundleLoadingTools.Utilities
                 if (renderer == null) continue;
                 foreach (var material in renderer.sharedMaterials)
                 {
+                    if(material == null || material.shader == null) continue;
+
+                    if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
+                    if (!compiledShaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
+                    {
+                        compiledShaderInfos.Add(new(material.shader, shaderKeywords));
+                    }
+
                     if (material != null && material.shader != null && !sharedMaterials.Contains(material)) sharedMaterials.Add(material);
                     if (material != null && material.shader != null && !loadedShaders.Contains(material.shader)) loadedShaders.Add(material.shader);
                 }
@@ -132,7 +139,9 @@ namespace AssetBundleLoadingTools.Utilities
             return keywords;
         }
 
-        private static CompiledShaderInfo GetShaderInfo(Shader shader, Dictionary<string, List<string>> keywords) {
+        // keywords can be made much better with toni's method if we're able to get each individual subshader's keywords
+        // can be changed to List<List<string>>
+        private static CompiledShaderInfo GetShaderInfo(Shader shader, List<string> keywords) {
             List<ShaderProperty> properties = new();
 
             for (int i = 0; i < shader.GetPropertyCount(); i++)
@@ -150,8 +159,8 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 var platforms = new List<ShaderVRPlatform>();
 
-                if (properties.Contains(_singlePassKeyword)) platforms.Add(ShaderVRPlatform.SinglePass);
-                if (properties.Contains(_singlePassInstancedKeyword)) platforms.Add(ShaderVRPlatform.SinglePassInstanced);
+                if (properties.Contains(Constants.SinglePassKeyword)) platforms.Add(ShaderVRPlatform.SinglePass);
+                if (properties.Contains(Constants.SinglePassInstancedKeyword)) platforms.Add(ShaderVRPlatform.SinglePassInstanced);
 
                 return platforms;
             }
