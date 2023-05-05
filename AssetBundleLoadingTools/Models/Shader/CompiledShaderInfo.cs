@@ -23,24 +23,7 @@ namespace AssetBundleLoadingTools.Models.Shader
 
         [JsonProperty]
         public ShaderVariantInfo VariantInfo { get; set; }
-        
-        public bool ReplacementExistsLocally { get; set; }
 
-
-        // hash
-        // serialized VRProperty
-        // for ReplacementShaderInfo
-        // BundlePath
-        // 
-        // TODO: "matching shader" check
-        /*
-        public CompiledShaderInfo(string name, List<ShaderProperty> properties, ShaderVariantInfo variantInfo, bool replacementExistsLocally)
-        {
-            Name = name;
-            Properties = properties;
-            VariantInfo = variantInfo;
-            ReplacementExistsLocally = replacementExistsLocally;
-        }*/
         [JsonConstructor]
         public CompiledShaderInfo() { }
 
@@ -67,6 +50,45 @@ namespace AssetBundleLoadingTools.Models.Shader
 
             return properties;
         }
+
+        private bool Matches(string otherName, List<ShaderProperty> otherProperties)
+        {
+            if (otherName != Name) return false;
+
+            // name matches; check if serialized properties are the same
+            // this does not use variants for now as it's a bit too unstable between the three systems
+
+            if (otherProperties.Count != Properties.Count) return false;
+            foreach (var property in Properties)
+            {
+                bool exists = false;
+                foreach (var otherProperty in otherProperties)
+                {
+                    // unsure if display name necessary
+                    if (
+                        property.Name == otherProperty.Name &&
+                        property.DisplayName == otherProperty.DisplayName &&
+                        property.PropertyType == otherProperty.PropertyType)
+                    {
+                        exists = true;
+                    }
+                }
+
+                if (exists == false) return false;
+            }
+
+            return true;
+        }
+
+        public bool MatchesShader(UnityEngine.Shader otherShader)
+        {
+            if (otherShader.name != Name) return false;
+            var otherProperties = GetShaderProperties(otherShader);
+            
+            return Matches(otherShader.name, otherProperties);
+        }
+
+        public bool MatchesShaderInfo(CompiledShaderInfo otherCompiledShaderInfo) => Matches(otherCompiledShaderInfo.Name, otherCompiledShaderInfo.Properties);
 
         // could eventually need variant/subshader/pass info if there's collisions
         // a shader should ALWAYS match if it's being replaced - if somebody's adding properties, the shader likely works differently, and it **SHOULD NOT** replace it
