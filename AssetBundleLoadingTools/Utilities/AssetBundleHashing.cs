@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine.Windows;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -25,6 +26,15 @@ namespace AssetBundleLoadingTools.Utilities
             using var sha256 = SHA256.Create();
             using var stream = File.OpenRead(path);
             var hashBytes = sha256.ComputeHash(stream);
+            return ByteToHexBitFiddle(hashBytes);
+        }
+
+        public static string FromBytes(byte[] bytes)
+        {
+            // Use input string to calculate MD5 hash
+            using var sha1 = SHA1.Create();
+            var hashBytes = sha1.ComputeHash(bytes);
+
             return ByteToHexBitFiddle(hashBytes);
         }
 

@@ -74,6 +74,7 @@ namespace AssetBundleLoadingTools.Core
             {
                 foreach(var shader in manifest.ShadersByBundlePath.Values)
                 {
+                    // TODO: return Partial match(?)
                     if (shader.MatchesShaderInfo(shaderInfo))
                     {
                         // since we're returning it, it WILL get used with .Shader at some point

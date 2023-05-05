@@ -10,8 +10,23 @@ namespace AssetBundleLoadingTools.Utilities
 {
     public static class AssetBundleExtensions
     {
+        public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path) where T : Object => LoadAssetSafe<T>(bundle, path, null);
+
         public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
+            if (hash == null)
+            {
+                // check for HashedAssetBundle
+                if (HashedAssetBundle.HashedBundles.TryGetValue(bundle, out var newHash))
+                {
+                    hash = newHash;
+                }
+                else
+                {
+                    throw new System.Exception("Not a HashedAssetBundle.");
+                }
+            }
+
             var asset = bundle.LoadAsset<T>(path);
             var gameObject = GameObjectFromAsset(asset);
 
@@ -24,8 +39,21 @@ namespace AssetBundleLoadingTools.Utilities
         }
 
         // I didn't want to try to do whatever the hell async assetbundle loading actually is, so this is just a task
+        public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path) where T : Object => await LoadAssetAsyncSafe<T> (bundle, path, null);
         public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
+            if(hash == null)
+            {
+                // check for HashedAssetBundle
+                if(HashedAssetBundle.HashedBundles.TryGetValue(bundle, out var newHash))
+                {
+                    hash = newHash;
+                }
+                else
+                {
+                    throw new System.Exception("Not a HashedAssetBundle.");
+                }
+            }
             var completion = new TaskCompletionSource<T?>();
             var assetLoadRequest = bundle.LoadAssetAsync<T>(path);
 

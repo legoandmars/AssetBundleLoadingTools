@@ -10,6 +10,7 @@ using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using AssetBundleLoadingTools.Models.Shader;
 using AssetBundleLoadingTools.Core;
+using System.IO;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -32,9 +33,16 @@ namespace AssetBundleLoadingTools.Utilities
         public static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             if (gameObject == null) return false;
-
-            bool fixable = true;
             var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+
+            return FixLegacyShadersInternal(gameObject, keywords, hash);
+
+        }
+
+        private static bool FixLegacyShadersInternal(GameObject gameObject, Dictionary<string, List<string>> keywords, string hash)
+        {
+            bool fixable = true;
+
             foreach (var shaderKeywordData in keywords)
             {
                 Debug.Log($"{shaderKeywordData.Key}: {string.Join(", ", shaderKeywordData.Value)}");
@@ -49,7 +57,7 @@ namespace AssetBundleLoadingTools.Utilities
                 if (renderer == null) continue;
                 foreach (var material in renderer.sharedMaterials)
                 {
-                    if(material == null || material.shader == null) continue;
+                    if (material == null || material.shader == null) continue;
 
                     if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
                     if (!shaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
@@ -59,7 +67,7 @@ namespace AssetBundleLoadingTools.Utilities
                 }
             }
 
-            foreach(var shaderInfo in shaderInfos)
+            foreach (var shaderInfo in shaderInfos)
             {
                 // shader replacement pass
                 if (!shaderInfo.IsSupported)
@@ -70,9 +78,9 @@ namespace AssetBundleLoadingTools.Utilities
                     var replacement = ShaderBundleLoader.GetReplacementShader(shaderInfo);
                     if (replacement == null) continue;
 
-                    foreach(var material in sharedMaterials)
+                    foreach (var material in sharedMaterials)
                     {
-                        if(material.shader == shaderInfo.Shader)
+                        if (material.shader == shaderInfo.Shader)
                         {
                             Debug.Log("Successfully replaced");
                             material.shader = replacement.Shader;
