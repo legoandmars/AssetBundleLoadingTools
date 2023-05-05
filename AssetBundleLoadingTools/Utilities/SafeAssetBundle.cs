@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -76,6 +77,25 @@ namespace AssetBundleLoadingTools.Utilities
         public T LoadAsset<T>(string name) where T : Object
         {
             return AssetBundleExtensions.LoadAssetSafe<T>(_bundle, name, _hash);
+        }
+
+        // maybe convert into a LoadAssetAndFixShaders() method?
+        public void FixShadersOnLoadedGameObject(GameObject gameObject)
+        {
+            ShaderRepairUtility.FixLegacyShaders(gameObject, _bundlePath, _hash);
+        }
+
+        public void Unload(bool unloadAllLoadedObjects)
+        {
+            if(_initializationType != AssetBundleInitializationType.File && _bundlePath.StartsWith(Path.GetTempPath()))
+            {
+                // is this even necessary (?)
+                // pretty sure temp will get cleared
+                // might be risky
+                File.Delete(_bundlePath);
+            }
+
+            _bundle.Unload(unloadAllLoadedObjects);
         }
     }
 }
