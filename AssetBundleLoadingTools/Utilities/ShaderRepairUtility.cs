@@ -41,8 +41,7 @@ namespace AssetBundleLoadingTools.Utilities
             }
 
             List<Material> sharedMaterials = new();
-            List<Shader> loadedShaders = new();
-            List<CompiledShaderInfo> compiledShaderInfos = new();
+            List<CompiledShaderInfo> shaderInfos = new();
 
             // TODO: Is there anything that uses shaders that isn't a renderer?
             foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
@@ -53,43 +52,21 @@ namespace AssetBundleLoadingTools.Utilities
                     if(material == null || material.shader == null) continue;
 
                     if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
-                    if (!compiledShaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
+                    if (!shaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
                     {
-                        compiledShaderInfos.Add(new(material.shader, shaderKeywords));
+                        shaderInfos.Add(new(material.shader, shaderKeywords));
                     }
-
-                    if (material != null && material.shader != null && !sharedMaterials.Contains(material)) sharedMaterials.Add(material);
-                    if (material != null && material.shader != null && !loadedShaders.Contains(material.shader)) loadedShaders.Add(material.shader);
                 }
             }
 
-            Dictionary<Shader, Shader> shaderReplacementInfo = new();
-            for (int i = 0; i < loadedShaders.Count; i++)
+            foreach(var shaderInfo in shaderInfos)
             {
-                var shader = loadedShaders[i];
-                // TODO implement cache
-                var shaderInfo = GetShaderInfo(shader, keywords);
-                // unneeded if already SPI
-                if (shaderInfo.Platforms.Contains(ShaderVRPlatform.SinglePassInstanced)) continue;
-
-                var replacement = GetShaderReplacement(shaderInfo);
-                if (replacement == null)
+                // shader replacement pass
+                if (!shaderInfo.IsSupported)
                 {
-                    // TODO: maybe return a list of "unfixable" shaders?
-                    fixable = false;
-                    continue;
-                }
+                    Debug.Log("NOT SUPPORTED! REPLACE!");
 
-                shaderInfo.ReplacementExistsLocally = true;
-                shaderReplacementInfo.Add(shader, replacement);
-            }
-
-            // final "shader replacement" pass
-            foreach (var material in sharedMaterials)
-            {
-                if (shaderReplacementInfo.TryGetValue(material.shader, out Shader replacementShader))
-                {
-                    material.shader = replacementShader;
+                    // material.shader = shader;
                 }
             }
 
@@ -139,65 +116,6 @@ namespace AssetBundleLoadingTools.Utilities
             return keywords;
         }
 
-        // keywords can be made much better with toni's method if we're able to get each individual subshader's keywords
-        // can be changed to List<List<string>>
-        private static CompiledShaderInfo GetShaderInfo(Shader shader, List<string> keywords) {
-            List<ShaderProperty> properties = new();
-
-            for (int i = 0; i < shader.GetPropertyCount(); i++)
-            {
-                properties.Add(new(shader.GetPropertyName(i), shader.GetPropertyDescription(i), shader.GetPropertyType(i)));
-            }
-
-            return new CompiledShaderInfo(shader.name, properties, GetVRPlatforms(shader, keywords), false);
-        }
-
-        // can remove keywords property if we use Toni's method
-        private static List<ShaderVRPlatform> GetVRPlatforms(Shader shader, Dictionary<string, List<string>> keywords)
-        {
-            if (keywords.TryGetValue(shader.name, out List<string> properties))
-            {
-                var platforms = new List<ShaderVRPlatform>();
-
-                if (properties.Contains(Constants.SinglePassKeyword)) platforms.Add(ShaderVRPlatform.SinglePass);
-                if (properties.Contains(Constants.SinglePassInstancedKeyword)) platforms.Add(ShaderVRPlatform.SinglePassInstanced);
-
-                return platforms;
-            }
-            else
-            {
-                return new();
-            }
-        }
-
-        private static bool ShaderSupported(Shader shader)
-        {
-
-            Debug.Log(shader.name);
-            int propertyCount = shader.GetPropertyCount();
-            for (int i = 0; i < propertyCount; i++)
-            {
-                string propertyName = shader.GetPropertyName(i);
-                ShaderPropertyType propertyType = shader.GetPropertyType(i);
-                string displayName = shader.GetPropertyDescription(i);
-
-                Debug.Log($"{propertyName} ({displayName}): {propertyType}");
-            }
-
-            // Honestly i'm not really sure how to do this!
-            // The built in shader properties like isSupported don't quite work for what we need
-            // So we need to actually check the keywords the shader was compiled against...
-            // Just going off of Unity Version or whatever would be too unreliable, and we don't want to replace *every* shader if some will already be compiled for the proper render target
-            // I thought it would be easy but unity provides **absolutely ZERO** way to see what variants a shader has, much less which keywords each of those variants has
-            // we need *some* way to quantify if the shader supports UNITY_SINGLE_PASS_STEREO, STEREO_INSTANCING_ON, or both.
-            // This info is easily available deep within the assetbundle, but I'm not sure if there's a sane way to get it
-            // https://i.imgur.com/qD0zXvf.png
-            // https://i.imgur.com/a9nCfug.png
-            // We might have to end up using AssetTools.NET, which I ***REALLY*** want to avoid because it will add a lot of unnecessary complexity and overhead
-            // Alternatively, I could be overthinking this, and there might be some simple solution staring me in the face!
-
-            return true;
-        }
 
         public static bool FixAndDownloadLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {

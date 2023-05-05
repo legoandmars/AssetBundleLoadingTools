@@ -24,6 +24,18 @@ namespace AssetBundleLoadingTools.Models.Shader
         [JsonProperty]
         public ShaderVariantInfo VariantInfo { get; set; }
 
+        // **Technically** this can be set to check whatever
+        // For now, we're just going to hardcode the variant check for Beat Saber
+        // Maybe eventually this can cover other things like Platform (PC/Android?)
+        [JsonIgnore]
+        public bool IsSupported
+        { 
+            get 
+            {
+                return VariantInfo.IsSinglePassInstanced;
+            } 
+        }
+
         [JsonConstructor]
         public CompiledShaderInfo() { }
 
@@ -80,7 +92,8 @@ namespace AssetBundleLoadingTools.Models.Shader
             return true;
         }
 
-        public bool MatchesShader(UnityEngine.Shader otherShader)
+        // deep match
+        public bool MatchesOtherShader(UnityEngine.Shader otherShader)
         {
             if (otherShader.name != Name) return false;
             var otherProperties = GetShaderProperties(otherShader);

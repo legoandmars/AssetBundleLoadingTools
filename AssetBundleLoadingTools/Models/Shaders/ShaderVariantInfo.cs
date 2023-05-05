@@ -1,4 +1,5 @@
 ﻿using AssetBundleLoadingTools.Core;
+using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace AssetBundleLoadingTools.Models.Shader
         // WARNING: Avoid using variants/keywords for comparison purposes
         // The format is not consistent between loaded shaders
         [JsonProperty]
-        private List<List<string>> _variants { get; set; }
+        private List<ShaderVariant> _variants { get; set; }
 
         // Platforms is serialized seperately, even though we ***COULD*** probably infer it from keywords
         // Not 100% confident in the keyword extraction we have right now
@@ -29,12 +30,12 @@ namespace AssetBundleLoadingTools.Models.Shader
 
         public bool CompiledWithKeyword(string keyword)
         {
-            return _variants.Any(x => x.Contains(keyword));
+            return _variants.Any(x => x.Keywords.Contains(keyword));
         }
 
         public ShaderVariantInfo(List<List<string>> variantKeywordsList)
         {
-            _variants = variantKeywordsList;
+            _variants = variantKeywordsList.Select(x => new ShaderVariant(x)).ToList();
             Platforms = new List<ShaderVRPlatform>();
             if (CompiledWithKeyword(Constants.SinglePassKeyword)) Platforms.Add(ShaderVRPlatform.SinglePass);
             if (CompiledWithKeyword(Constants.SinglePassInstancedKeyword)) Platforms.Add(ShaderVRPlatform.SinglePassInstanced);

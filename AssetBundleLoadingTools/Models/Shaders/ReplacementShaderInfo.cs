@@ -10,6 +10,12 @@ namespace AssetBundleLoadingTools.Models.Shader
     [Serializable]
     public class ReplacementShaderInfo
     {
+        [JsonProperty]
+        public string BundleName { get; set; }
+
+        [JsonProperty]
+        public string ShaderBundlePath { get; set; }
+        /*
         public string Name { get; set; }
         public string BundlePath { get; set; }
         public List<ShaderProperty> Properties { get; set; }
@@ -22,6 +28,6 @@ namespace AssetBundleLoadingTools.Models.Shader
             Name = name;
             Properties = properties;
             Platforms = platforms;
-        }
+        }*/
     }
 }

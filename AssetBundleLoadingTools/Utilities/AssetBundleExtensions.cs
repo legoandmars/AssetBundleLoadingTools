@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Caching = AssetBundleLoadingTools.Core.Caching;
+using AssetBundleLoadingTools.Models.Bundles;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -82,7 +83,7 @@ namespace AssetBundleLoadingTools.Utilities
 
                 if (bundleData == null)
                 {
-                    bundleData = new BundleData(path, isDangerous);
+                    bundleData = new BundleSafetyData(path, isDangerous);
                 }
 
                 Caching.AddBundleDataToCache(hash, bundleData);

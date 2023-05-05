@@ -1,4 +1,5 @@
 ﻿using AssetBundleLoadingTools.Models;
+using AssetBundleLoadingTools.Models.Bundles;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
@@ -22,7 +23,7 @@ namespace AssetBundleLoadingTools.Core
         // warning is likely unnecessary but might reduce the odds of people using the cache to allow malicious assetbundles
         private const string _warningText = "WARNING: UNLESS YOU KNOW WHAT YOU ARE DOING, DO ***NOT*** CHANGE ANYTHING IN THIS FOLDER.\nIF SOMEONE TOLD YOU TO CHANGE/PASTE SOMETHING HERE, THEY COULD BE TRICKING YOU INTO INSTALLING MALWARE ON YOUR SYSTEM.";
 
-        private static ConcurrentDictionary<string, BundleData> _cachedBundleData = new();
+        private static ConcurrentDictionary<string, BundleSafetyData> _cachedBundleData = new();
 
         // TODO: r/w more smart to avoid unnecessary disk
         // maybe a 1 second timer or on quit or something
@@ -32,7 +33,7 @@ namespace AssetBundleLoadingTools.Core
             if (File.Exists(_cachedBundleDataPath))
             {
                 var cachedData = File.ReadAllText(_cachedBundleDataPath);
-                _cachedBundleData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, BundleData>>(cachedData);
+                _cachedBundleData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, BundleSafetyData>>(cachedData);
                 if (_cachedBundleData == null) _cachedBundleData = new();
             }
         }
@@ -46,9 +47,9 @@ namespace AssetBundleLoadingTools.Core
             File.WriteAllText(_cachedBundleDataPath, JsonConvert.SerializeObject(_cachedBundleData));
         }
 
-        internal static void AddBundleDataToCache(string hash, BundleData data)
+        internal static void AddBundleDataToCache(string hash, BundleSafetyData data)
         {
-            if (_cachedBundleData.TryGetValue(hash, out BundleData existingData))
+            if (_cachedBundleData.TryGetValue(hash, out BundleSafetyData existingData))
             {
                 // try to save it
                 // this could be a "multiple gameobject LoadAssets in a single" type problem
@@ -69,9 +70,9 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
-        internal static BundleData? GetCachedBundleData(string hash)
+        internal static BundleSafetyData? GetCachedBundleData(string hash)
         {
-            if (_cachedBundleData.TryGetValue(hash, out BundleData data))
+            if (_cachedBundleData.TryGetValue(hash, out BundleSafetyData data))
             {
                 return data;
             }

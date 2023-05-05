@@ -5,19 +5,23 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace AssetBundleLoadingTools.Models
+namespace AssetBundleLoadingTools.Models.Bundles
 {
     [Serializable]
-    public class BundleData
+    public class BundleSafetyData
     {
+        [JsonProperty]
         public string Path { get; set; }
+        [JsonProperty]
         public bool IsDangerous { get; set; }
 
-        [JsonConstructor]
-        public BundleData(string path, bool isDangerous)
+        public BundleSafetyData(string path, bool isDangerous)
         {
             Path = path;
             IsDangerous = isDangerous;
         }
+
+        [JsonConstructor]
+        public BundleSafetyData() { }
     }
 }

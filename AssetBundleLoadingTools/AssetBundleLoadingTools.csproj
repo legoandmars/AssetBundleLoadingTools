@@ -53,6 +53,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -108,11 +109,17 @@
   <ItemGroup>
     <Compile Include="Config\PluginConfig.cs" />
     <Compile Include="Core\Caching.cs" />
+    <Compile Include="Core\Constants.cs" />
+    <Compile Include="Utilities\ReplacementShaderLoader.cs" />
     <Compile Include="Core\Sanitization.cs" />
-    <Compile Include="Models\BundleData.cs" />
-    <Compile Include="Models\Shader\CompiledShaderInfo.cs" />
-    <Compile Include="Models\Shader\ShaderProperty.cs" />
-    <Compile Include="Models\Shader\ShaderVRPlatform.cs" />
+    <Compile Include="Models\Bundles\BundleSafetyData.cs" />
+    <Compile Include="Models\Bundles\BundleShaderData.cs" />
+    <Compile Include="Models\Manifests\ShaderBundleManifest.cs" />
+    <Compile Include="Models\Shaders\CompiledShaderInfo.cs" />
+    <Compile Include="Models\Shaders\ReplacementShaderInfo.cs" />
+    <Compile Include="Models\Shaders\ShaderProperty.cs" />
+    <Compile Include="Models\Shaders\ShaderVariantInfo.cs" />
+    <Compile Include="Models\Shaders\ShaderVRPlatform.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\AssetBundleHashing.cs" />
