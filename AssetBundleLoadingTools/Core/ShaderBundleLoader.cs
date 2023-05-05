@@ -1,4 +1,6 @@
 ﻿using AssetBundleLoadingTools.Models.Manifests;
+using AssetBundleLoadingTools.Models.Shader;
+using AssetBundleLoadingTools.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,9 @@ namespace AssetBundleLoadingTools.Core
     public class ShaderBundleLoader
     {
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
+
+        // TODO: unstatic :(
+        private static List<ShaderBundleManifest> manifests = new();
         public ShaderBundleLoader() 
         {
 
@@ -25,6 +30,8 @@ namespace AssetBundleLoadingTools.Core
 
         public void LoadAllBundles()
         {
+            Debug.Log("SHIT!");
+
             List<string> files = new();
             foreach(var fileExtension in _fileExtensions)
             {
@@ -35,48 +42,111 @@ namespace AssetBundleLoadingTools.Core
             {
                 LoadBundle(file);
             }
+
+            Debug.Log("DONELOADING!");
+            Debug.Log(manifests.Count);
+
+            return;
         }
 
-        private async void LoadBundle(string path)
+        private void LoadBundle(string path)
         {
-            Debug.Log(path);
-            Debug.Log("Attempting to load bundle..");
+            var manifest = ManifestFromZipFile(path);
+            if (manifest == null) return;
+            manifest.Path = path;
 
-            var manifest = await ManifestFromZipFileAsync(path);
-            // serialize
-            // Debug.Log(JsonConvert.SerializeObject(manifest, Formatting.Indented));
-            //var bundle = await LoadAssetBundleFromPathAsync(path);
-            //Debug.Log("BUNDLE LOADED! Deserializing time...");
+            // TODO: Once there's an async API available, it should be relatively straightforward to wait to load these until the first request
+            // Really shouldn't need to load these right away *at all*
+            var bundleStream = AssetBundleStreamFromZipFile(path);
+            if(bundleStream == null) return;
+            var bundle = AssetBundle.LoadFromStream(bundleStream);
+            manifest.AssetBundle = bundle;
+
+            //Debug.Log("why>?")
+            manifests.Add(manifest);
+
+            return;
         }
 
-        private async Task<ShaderBundleManifest?> ManifestFromZipFileAsync(string path)
+        public static CompiledShaderInfo? GetReplacementShader(CompiledShaderInfo shaderInfo)
         {
-            var completion = new TaskCompletionSource<ShaderBundleManifest?>();
-
-            using (ZipArchive archive = ZipFile.OpenRead(path))
+            foreach(var manifest in manifests)
             {
-                var jsonEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.ManifestFileName);
-                var bundleEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.BundleFileName);
-                if (jsonEntry == null || bundleEntry == null)
+                foreach(var shader in manifest.ShadersByBundlePath.Values)
                 {
-                    completion.SetResult(null);
+                    if (shader.MatchesShaderInfo(shaderInfo))
+                    {
+                        // since we're returning it, it WILL get used with .Shader at some point
+                        LoadReplacementShaderFromBundle(shader, manifest);
+                        // load from disk
+                        return shader;
+                    }
                 }
-
-                using var manifestStream = new StreamReader(jsonEntry.Open(), Encoding.Default);
-                string manifestString = await manifestStream.ReadToEndAsync();
-                ShaderBundleManifest manifest = JsonConvert.DeserializeObject<ShaderBundleManifest>(manifestString);
-
-                completion.SetResult(manifest);
             }
 
-            return await completion.Task;
+            return null;
         }
 
+        // TODO: Async
+        private static void LoadReplacementShaderFromBundle(CompiledShaderInfo shaderInfo, ShaderBundleManifest manifest)
+        {
+            if (shaderInfo.Shader == null)
+            {
+                if(manifest.AssetBundle == null)
+                    throw new NullReferenceException(nameof(manifest.AssetBundle));
 
-        private async Task<AssetBundle?> LoadAssetBundleFromPathAsync(string path)
+                foreach(var bundlePathAndShaderInfo in manifest.ShadersByBundlePath)
+                {
+                    if (bundlePathAndShaderInfo.Value != shaderInfo) continue;
+                    shaderInfo.Shader = manifest.AssetBundle.LoadAsset<Shader>(bundlePathAndShaderInfo.Key);
+                }
+                //manifest.AssetBundle.LoadAssetAsyncSafe<Shader>(manifest.)
+                // load from bundle
+
+            }
+        }
+
+        private ShaderBundleManifest? ManifestFromZipFile(string path)
+        {
+            using ZipArchive archive = ZipFile.OpenRead(path);
+
+            var jsonEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.ManifestFileName);
+            var bundleEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.BundleFileName);
+            if (jsonEntry == null || bundleEntry == null) return null;
+
+            using var manifestStream = new StreamReader(jsonEntry.Open(), Encoding.Default);
+            string manifestString = manifestStream.ReadToEnd();
+            ShaderBundleManifest manifest = JsonConvert.DeserializeObject<ShaderBundleManifest>(manifestString);
+
+            return manifest;
+        }
+
+        /*private async Task<AssetBundle?> AssetBundleFromZipFileAsync(string path)
+        {
+            var stream = await AssetBundleStreamFromZipFileAsync(path);
+            if (stream == null) return null;
+            return await LoadAssetBundleFromStreamAsync(stream);
+        }*/
+
+        private MemoryStream? AssetBundleStreamFromZipFile(string path)
+        {
+            using ZipArchive archive = ZipFile.OpenRead(path);
+
+            var jsonEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.ManifestFileName);
+            var bundleEntry = archive.Entries.FirstOrDefault(i => i.Name == Constants.BundleFileName);
+            if (jsonEntry == null || bundleEntry == null) return null;
+
+            var seekableStream = new MemoryStream();
+            bundleEntry.Open().CopyTo(seekableStream);
+            seekableStream.Position = 0;
+            
+            return seekableStream;
+        }
+
+        private async Task<AssetBundle?> LoadAssetBundleFromStreamAsync(Stream stream)
         {
             var completion = new TaskCompletionSource<AssetBundle?>();
-            var assetLoadRequest = AssetBundle.LoadFromFileAsync(path);
+            var assetLoadRequest = AssetBundle.LoadFromStreamAsync(stream);
 
             assetLoadRequest.completed += delegate
             {

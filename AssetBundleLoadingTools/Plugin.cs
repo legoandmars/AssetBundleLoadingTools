@@ -4,6 +4,7 @@ using IPA;
 using IPA.Config;
 using IPA.Config.Stores;
 using IPA.Utilities;
+using System.Threading.Tasks;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
@@ -23,20 +24,21 @@ namespace AssetBundleLoadingTools
         internal static PluginConfig Config { get; private set; }
 
         [Init]
-        public Plugin(IPALogger logger, IPA.Config.Config config)
+        public async void Init(IPALogger logger, IPA.Config.Config config)
         {
             Instance = this;
             Log = logger;
             Config = config.Generated<PluginConfig>();
 
             Caching.ReadCache();
-        }
-
-        [OnStart]
-        public void OnApplicationStart()
-        {
             var loader = new ShaderBundleLoader();
             loader.LoadAllBundles();
+        }
+
+
+        [OnStart]
+        public async void OnApplicationStart()
+        {
 
         }
 

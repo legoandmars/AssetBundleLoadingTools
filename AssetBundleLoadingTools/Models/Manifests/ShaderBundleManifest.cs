@@ -15,10 +15,17 @@ namespace AssetBundleLoadingTools.Models.Manifests
 
     public class ShaderBundleManifest
     {
-        public List<ShaderBundleManifestEntry> ManifestEntries { get; set; } // hack to work with legacy unity projects
+        [JsonProperty("ManifestEntries")]
+        private List<ShaderBundleManifestEntry> _manifestEntries { get; set; } // hack to work with legacy unity projects
 
         [JsonIgnore]
         public Dictionary<string, CompiledShaderInfo> ShadersByBundlePath { get; set; }
+
+        [JsonIgnore]
+        public string Path { get; set; }
+
+        [JsonIgnore]
+        public AssetBundle? AssetBundle { get; set; }
 
         public long TimeSerialized { get; set; }
 
@@ -37,17 +44,17 @@ namespace AssetBundleLoadingTools.Models.Manifests
                 ShadersByBundlePath.Add(entry.BundlePath, entry.ShaderInfo);
             }
 
-            ManifestEntries = null; // literally only needed for serialization
+            _manifestEntries = null; // literally only needed for serialization
         }
 
         // mostly for debugging, this will never be serialized in plugin
         [OnSerializing] 
         public void OnSerializing(StreamingContext context)
         {
-            ManifestEntries = new();
+            _manifestEntries = new();
             foreach(var entry in ShadersByBundlePath)
             {
-                ManifestEntries.Add(new(entry.Key, entry.Value));
+                _manifestEntries.Add(new(entry.Key, entry.Value));
             }
         }
     }
