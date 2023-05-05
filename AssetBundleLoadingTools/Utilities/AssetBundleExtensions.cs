@@ -53,7 +53,7 @@ namespace AssetBundleLoadingTools.Utilities
             return await completion.Task;
         }
     
-        private static GameObject? GameObjectFromAsset<T>(T asset)
+        public static GameObject? GameObjectFromAsset<T>(T asset)
         {
             GameObject gameObject;
 

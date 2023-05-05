@@ -74,15 +74,47 @@ namespace AssetBundleLoadingTools.Utilities
             return new SafeAssetBundle(bundle, AssetBundleInitializationType.Stream, hash, bundlePath);
         }
 
+        public static SafeAssetBundleCreateRequest LoadFromFileAsync(string path) => LoadFromFileAsync(path, 0u, 0ul);
+        public static SafeAssetBundleCreateRequest LoadFromFileAsync(string path, uint crc) => LoadFromFileAsync(path, crc, 0uL);
+        public static SafeAssetBundleCreateRequest LoadFromFileAsync(string path, uint crc, ulong offset)
+        {
+            var asyncRequest = AssetBundle.LoadFromFileAsync(path, crc, offset);
+            return new SafeAssetBundleCreateRequest(asyncRequest, path);
+        }
+
+        public static SafeAssetBundleCreateRequest LoadFromMemoryAsync(byte[] binary) => LoadFromMemoryAsync(binary, 0u);
+        public static SafeAssetBundleCreateRequest LoadFromMemoryAsync(byte[] binary, uint crc)
+        {
+            var asyncRequest = AssetBundle.LoadFromMemoryAsync(binary, crc);
+            return new SafeAssetBundleCreateRequest(asyncRequest, binary);
+        }
+
         public T LoadAsset<T>(string name) where T : Object
         {
             return AssetBundleExtensions.LoadAssetSafe<T>(_bundle, name, _hash);
+        }
+
+        // TODO: Convert away from task
+        public Task<T> LoadAssetAsync<T>(string name) where T : Object
+        {
+            return AssetBundleExtensions.LoadAssetAsyncSafe<T>(_bundle, name, _hash);
         }
 
         // maybe convert into a LoadAssetAndFixShaders() method?
         public void FixShadersOnLoadedGameObject(GameObject gameObject)
         {
             ShaderRepairUtility.FixLegacyShaders(gameObject, _bundlePath, _hash);
+        }
+
+        // provided to make generics easier to fix shaders on
+        // TODO: Support Shader type
+        public void FixShadersOnLoadedObject<T>(T loadedObject) where T : Object
+        {
+            var gameObject = AssetBundleExtensions.GameObjectFromAsset(loadedObject);
+            if (gameObject != null)
+            {
+                ShaderRepairUtility.FixLegacyShaders(gameObject, _bundlePath, _hash);
+            }
         }
 
         public void Unload(bool unloadAllLoadedObjects)
