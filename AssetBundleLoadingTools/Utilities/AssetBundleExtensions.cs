@@ -16,15 +16,7 @@ namespace AssetBundleLoadingTools.Utilities
         {
             if (hash == null)
             {
-                // check for HashedAssetBundle
-                if (HashedAssetBundle.HashedBundles.TryGetValue(bundle, out var newHash))
-                {
-                    hash = newHash;
-                }
-                else
-                {
-                    throw new System.Exception("Not a HashedAssetBundle.");
-                }
+                throw new System.Exception("Not a HashedAssetBundle.");
             }
 
             var asset = bundle.LoadAsset<T>(path);
@@ -44,15 +36,7 @@ namespace AssetBundleLoadingTools.Utilities
         {
             if(hash == null)
             {
-                // check for HashedAssetBundle
-                if(HashedAssetBundle.HashedBundles.TryGetValue(bundle, out var newHash))
-                {
-                    hash = newHash;
-                }
-                else
-                {
-                    throw new System.Exception("Not a HashedAssetBundle.");
-                }
+                throw new System.Exception("Not a HashedAssetBundle.");
             }
             var completion = new TaskCompletionSource<T?>();
             var assetLoadRequest = bundle.LoadAssetAsync<T>(path);

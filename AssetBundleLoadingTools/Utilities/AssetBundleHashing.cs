@@ -38,6 +38,16 @@ namespace AssetBundleLoadingTools.Utilities
             return ByteToHexBitFiddle(hashBytes);
         }
 
+        // TODO: test
+        public static string FromStream(Stream stream)
+        {
+            // Use input string to calculate MD5 hash
+            using var sha1 = SHA1.Create();
+            var hashBytes = sha1.ComputeHash(stream);
+
+            return ByteToHexBitFiddle(hashBytes);
+        }
+
         // Black magic https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
         static string ByteToHexBitFiddle(byte[] bytes)
         {
