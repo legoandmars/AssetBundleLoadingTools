@@ -28,7 +28,9 @@ namespace AssetBundleLoadingTools
             Instance = this;
             Log = logger;
             Config = config.Generated<PluginConfig>();
-            
+
+            var loader = new ShaderBundleLoader();
+            loader.LoadAllBundles();
             Caching.ReadCache();
         }
 

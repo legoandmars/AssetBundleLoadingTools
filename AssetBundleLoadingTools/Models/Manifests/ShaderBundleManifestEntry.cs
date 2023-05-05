@@ -17,13 +17,13 @@ namespace AssetBundleLoadingTools.Models.Manifests
         [JsonProperty]
         public CompiledShaderInfo ShaderInfo { get; set; }
 
-        [JsonConstructor]
-        public ShaderBundleManifestEntry() { }
-
         public ShaderBundleManifestEntry(string bundlePath, CompiledShaderInfo shaderInfo)
         {
             BundlePath = bundlePath;
             ShaderInfo = shaderInfo;
         }
+
+        [JsonConstructor]
+        public ShaderBundleManifestEntry() { }
     }
 }

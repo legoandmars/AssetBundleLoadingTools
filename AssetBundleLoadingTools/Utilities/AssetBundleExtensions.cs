@@ -93,5 +93,18 @@ namespace AssetBundleLoadingTools.Utilities
                 Sanitization.SanitizeObject(gameObject);
             }
         }
+
+        internal static async Task<AssetBundle?> LoadAssetBundleFromPathAsync(string path)
+        {
+            var completion = new TaskCompletionSource<AssetBundle?>();
+            var assetLoadRequest = AssetBundle.LoadFromFileAsync(path);
+
+            assetLoadRequest.completed += delegate
+            {
+                completion.SetResult(assetLoadRequest.assetBundle);
+            };
+
+            return await completion.Task;
+        }
     }
 }

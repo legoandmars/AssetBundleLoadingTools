@@ -39,9 +39,7 @@ namespace AssetBundleLoadingTools.Models.Shader
         [JsonConstructor]
         public CompiledShaderInfo() { }
 
-        public CompiledShaderInfo(UnityEngine.Shader shader, List<string> keywords) : this(shader, new List<List<string>>() { keywords }) { }
-
-        public CompiledShaderInfo(UnityEngine.Shader shader, List<List<string>> variants)
+        public CompiledShaderInfo(UnityEngine.Shader shader, List<string> variants)
         {
             Shader = shader;
             Name = shader.name;

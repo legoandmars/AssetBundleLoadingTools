@@ -15,10 +15,9 @@ namespace AssetBundleLoadingTools.Core
     {
         // Shader and "malicious" caching is relatively different (and currently performed at different steps), so they're cached in seperate areas
 
-        private static readonly string _cachePath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "UserData", "AssetBundleLoadingTools");
-        private static readonly string _cachedBundleDataPath = Path.Combine(_cachePath, "AssetBundleHashData.dat");
-        private static readonly string _cachedShaderDataPath = Path.Combine(_cachePath, "AssetBundleShaderData.dat");
-        private static readonly string _warningPath = Path.Combine(_cachePath, "IMPORTANT_WARNING.txt");
+        private static readonly string _cachedBundleDataPath = Path.Combine(Constants.CachePath, "AssetBundleHashData.dat");
+        private static readonly string _cachedShaderDataPath = Path.Combine(Constants.CachePath, "AssetBundleShaderData.dat");
+        private static readonly string _warningPath = Path.Combine(Constants.CachePath, "IMPORTANT_WARNING.txt");
 
         // warning is likely unnecessary but might reduce the odds of people using the cache to allow malicious assetbundles
         private const string _warningText = "WARNING: UNLESS YOU KNOW WHAT YOU ARE DOING, DO ***NOT*** CHANGE ANYTHING IN THIS FOLDER.\nIF SOMEONE TOLD YOU TO CHANGE/PASTE SOMETHING HERE, THEY COULD BE TRICKING YOU INTO INSTALLING MALWARE ON YOUR SYSTEM.";
@@ -40,7 +39,7 @@ namespace AssetBundleLoadingTools.Core
 
         private static void WriteCache()
         {
-            if (!Directory.Exists(_cachePath)) Directory.CreateDirectory(_cachePath);
+            if (!Directory.Exists(Constants.CachePath)) Directory.CreateDirectory(Constants.CachePath);
 
             if (!File.Exists(_warningPath)) File.WriteAllText(_warningPath, _warningText);
 
