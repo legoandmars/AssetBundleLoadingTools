@@ -8,19 +8,17 @@ using System.Threading.Tasks;
 
 namespace AssetBundleLoadingTools.Models.Shader
 {
-    [Serializable]
     public class ShaderVariantInfo
     {
         // WARNING: Avoid using variants/keywords for comparison purposes
         // The format is not consistent between loaded shaders
 
         // Originally a list of individual passes/variants but it felt unnecessarily wasteful
-        [JsonProperty]
+        [JsonProperty("Keywords")]
         private List<string> _keywords { get; set; }
 
         // Platforms is serialized seperately, even though we ***COULD*** probably infer it from keywords
         // Not 100% confident in the keyword extraction we have right now
-        [JsonProperty]
         public List<ShaderVRPlatform> Platforms { get; set; }
 
         [JsonIgnore]
@@ -43,6 +41,10 @@ namespace AssetBundleLoadingTools.Models.Shader
         }
 
         [JsonConstructor]
-        public ShaderVariantInfo() { }
+        public ShaderVariantInfo(List<string> keywords, List<ShaderVRPlatform> platforms)
+        {
+            _keywords = keywords;
+            Platforms = platforms;
+        }
     }
 }

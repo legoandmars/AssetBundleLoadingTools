@@ -9,19 +9,15 @@ using UnityEngine;
 
 namespace AssetBundleLoadingTools.Models.Shader
 {
-    [Serializable]
     public class CompiledShaderInfo
     {
         [JsonIgnore]
         public UnityEngine.Shader Shader { get; set; }
 
-        [JsonProperty]
         public string Name { get; set; }
 
-        [JsonProperty]
         public List<ShaderProperty> Properties { get; set; }
 
-        [JsonProperty]
         public ShaderVariantInfo VariantInfo { get; set; }
 
         // **Technically** this can be set to check whatever
@@ -37,7 +33,12 @@ namespace AssetBundleLoadingTools.Models.Shader
         }
 
         [JsonConstructor]
-        public CompiledShaderInfo() { }
+        public CompiledShaderInfo(string name, List<ShaderProperty> properties, ShaderVariantInfo variantInfo) 
+        {
+            Name = name;
+            Properties = properties;
+            VariantInfo = variantInfo;
+        }
 
         public CompiledShaderInfo(UnityEngine.Shader shader, List<string> variants)
         {

@@ -13,26 +13,18 @@ namespace AssetBundleLoadingTools.Models.Bundles
     // TODO: Find a way to conditionally not need CompiledShaderInfos if NeedsShaderReplacement is false
     // It's a lot of data. Maybe too much, this could cause performance problems
 
-    [Serializable]
     public class BundleShaderData
     {
-        [JsonProperty]
         public string Path { get; set; }
-
-        [JsonProperty]
         public List<CompiledShaderInfo> CompiledShaderInfos { get; set; }
-
-        [JsonProperty]
         public bool NeedsReplacing { get; set; }
 
+        [JsonConstructor]
         public BundleShaderData(string path, List<CompiledShaderInfo> compiledShaderInfos, bool needsReplacing)
         {
             Path = path;
             CompiledShaderInfos = compiledShaderInfos;
             NeedsReplacing = needsReplacing;
         }
-
-        [JsonConstructor]
-        public BundleShaderData() { }
     }
 }

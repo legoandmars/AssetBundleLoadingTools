@@ -7,21 +7,16 @@ using Newtonsoft.Json;
 
 namespace AssetBundleLoadingTools.Models.Bundles
 {
-    [Serializable]
     public class BundleSafetyData
     {
-        [JsonProperty]
         public string Path { get; set; }
-        [JsonProperty]
         public bool IsDangerous { get; set; }
 
+        [JsonConstructor]
         public BundleSafetyData(string path, bool isDangerous)
         {
             Path = path;
             IsDangerous = isDangerous;
         }
-
-        [JsonConstructor]
-        public BundleSafetyData() { }
     }
 }

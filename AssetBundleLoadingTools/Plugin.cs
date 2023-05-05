@@ -29,14 +29,14 @@ namespace AssetBundleLoadingTools
             Log = logger;
             Config = config.Generated<PluginConfig>();
 
-            var loader = new ShaderBundleLoader();
-            loader.LoadAllBundles();
             Caching.ReadCache();
         }
 
         [OnStart]
         public void OnApplicationStart()
         {
+            var loader = new ShaderBundleLoader();
+            loader.LoadAllBundles();
 
         }
 

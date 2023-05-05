@@ -11,6 +11,10 @@ namespace AssetBundleLoadingTools.Core
     {
         public const string SinglePassKeyword = "UNITY_SINGLE_PASS_STEREO";
         public const string SinglePassInstancedKeyword = "STEREO_INSTANCING_ON";
+
+        public const string ManifestFileName = "manifest.json";
+        public const string BundleFileName = "shaders.asset";
+
         public static readonly string UserDataPath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "UserData", "AssetBundleLoadingTools");
         public static readonly string CachePath = Path.Combine(UserDataPath, "Cache");
         public static readonly string ShaderBundlePath = Path.Combine(UserDataPath, "ShaderBundles");
