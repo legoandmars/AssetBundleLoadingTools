@@ -111,8 +111,10 @@
     <Compile Include="Core\Caching.cs" />
     <Compile Include="Core\Constants.cs" />
     <Compile Include="Core\ShaderBundleLoader.cs" />
+    <Compile Include="Models\Bundles\AssetBundleInitializationType.cs" />
+    <Compile Include="Models\Bundles\SafeAssetBundleCreateRequest.cs" />
     <Compile Include="Models\Manifests\ShaderBundleManifestEntry.cs" />
-    <Compile Include="Utilities\HashedAssetBundle.cs" />
+    <Compile Include="Utilities\SafeAssetBundle.cs" />
     <Compile Include="Utilities\ReplacementShaderLoader.cs" />
     <Compile Include="Core\Sanitization.cs" />
     <Compile Include="Models\Bundles\BundleSafetyData.cs" />
