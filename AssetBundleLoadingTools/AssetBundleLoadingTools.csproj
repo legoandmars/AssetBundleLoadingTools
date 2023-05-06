@@ -44,6 +44,10 @@
     <DisableZipRelease>True</DisableZipRelease>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(BeatSaberDir)\Libs\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -79,6 +83,7 @@
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
@@ -105,6 +110,7 @@
     <Compile Include="Config\PluginConfig.cs" />
     <Compile Include="Core\Sanitization.cs" />
     <Compile Include="Models\BundleData.cs" />
+    <Compile Include="Patches\PersistentCall.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\AssetBundleHashing.cs" />
