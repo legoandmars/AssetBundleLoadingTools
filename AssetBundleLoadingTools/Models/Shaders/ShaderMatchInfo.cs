@@ -1,4 +1,5 @@
-﻿using AssetBundleLoadingTools.Models.Shaders;
+﻿using AssetBundleLoadingTools.Models.Properties;
+using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -6,12 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AssetBundleLoadingTools.Models.Properties
+namespace AssetBundleLoadingTools.Models.Shaders
 {
     // mostly used for debug logging. if no debug logging is necessary, we just need PropertyMatchType and MatchShaderInfo
-    public class PropertyMatchInfo
+    public class ShaderMatchInfo
     {
-        public PropertyMatchType PropertyMatchType { get; set; }
+        public ShaderMatchType ShaderMatchType { get; set; }
 
         [JsonIgnore]
         public CompiledShaderInfo? MatchShaderInfo { get; set; }
@@ -22,14 +23,14 @@ namespace AssetBundleLoadingTools.Models.Properties
 
         // debugging
         [JsonConstructor]
-        public PropertyMatchInfo(
-            PropertyMatchType propertyMatchType, 
+        public ShaderMatchInfo(
+            ShaderMatchType shaderMatchType, 
             CompiledShaderInfo matchShaderInfo, 
             List<ShaderProperty>? propertiesMissingFromShader,
             List<ShaderProperty> propertiesMissingFromMatchShader, 
             List<PropertyConflictInfo> propertyConflictInfos)
         {
-            PropertyMatchType = propertyMatchType;
+            ShaderMatchType = shaderMatchType;
             MatchShaderInfo = matchShaderInfo;
             PropertiesMissingFromShader = propertiesMissingFromShader;
             PropertiesMissingFromMatchShader = propertiesMissingFromMatchShader;
@@ -37,15 +38,15 @@ namespace AssetBundleLoadingTools.Models.Properties
         }
 
         // for non-debugging
-        public PropertyMatchInfo(CompiledShaderInfo compiledShaderInfo) 
+        public ShaderMatchInfo(CompiledShaderInfo compiledShaderInfo) 
         {
-            PropertyMatchType = PropertyMatchType.FullMatch;
+            ShaderMatchType = ShaderMatchType.FullMatch;
             MatchShaderInfo = compiledShaderInfo;
         }
 
-        public PropertyMatchInfo()
+        public ShaderMatchInfo()
         {
-            PropertyMatchType = PropertyMatchType.NoMatch;
+            ShaderMatchType = ShaderMatchType.NoMatch;
         }
     }
 }

@@ -116,16 +116,14 @@
     <Compile Include="Models\Manifests\ShaderBundleManifestEntry.cs" />
     <Compile Include="Models\Properties\PropertyConflictInfo.cs" />
     <Compile Include="Models\Properties\PropertyConflictType.cs" />
-    <Compile Include="Models\Properties\PropertyMatchInfo.cs" />
-    <Compile Include="Models\Properties\PropertyMatchType.cs" />
+    <Compile Include="Models\Shaders\ShaderMatchInfo.cs" />
+    <Compile Include="Models\Shaders\ShaderMatchType.cs" />
     <Compile Include="Utilities\SafeAssetBundle.cs" />
-    <Compile Include="Utilities\ReplacementShaderLoader.cs" />
     <Compile Include="Core\Sanitization.cs" />
     <Compile Include="Models\Bundles\BundleSafetyData.cs" />
     <Compile Include="Models\Bundles\BundleShaderData.cs" />
     <Compile Include="Models\Manifests\ShaderBundleManifest.cs" />
     <Compile Include="Models\Shaders\CompiledShaderInfo.cs" />
-    <Compile Include="Models\Shaders\ReplacementShaderInfo.cs" />
     <Compile Include="Models\Shaders\ShaderProperty.cs" />
     <Compile Include="Models\Shaders\ShaderVariantInfo.cs" />
     <Compile Include="Models\Shaders\ShaderVRPlatform.cs" />
@@ -133,6 +131,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\AssetBundleHashing.cs" />
     <Compile Include="Utilities\AssetBundleExtensions.cs" />
+    <Compile Include="Utilities\ShaderMatching.cs" />
     <Compile Include="Utilities\ShaderRepairUtility.cs" />
   </ItemGroup>
   <ItemGroup>

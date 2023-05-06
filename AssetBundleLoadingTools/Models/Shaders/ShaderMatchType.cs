@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AssetBundleLoadingTools.Models.Properties
+namespace AssetBundleLoadingTools.Models.Shaders
 {
-    public enum PropertyMatchType
+    public enum ShaderMatchType
     {
         NoMatch,
         PartialMatch, // name matches; properties don't

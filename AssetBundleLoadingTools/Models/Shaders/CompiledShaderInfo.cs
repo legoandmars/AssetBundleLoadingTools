@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using AssetBundleLoadingTools.Utilities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace AssetBundleLoadingTools.Models.Shaders
     public class CompiledShaderInfo
     {
         [JsonIgnore]
-        public UnityEngine.Shader Shader { get; set; }
+        public Shader Shader { get; set; }
 
         public string Name { get; set; }
 
@@ -40,26 +41,14 @@ namespace AssetBundleLoadingTools.Models.Shaders
             VariantInfo = variantInfo;
         }
 
-        public CompiledShaderInfo(UnityEngine.Shader shader, List<string> variants)
+        public CompiledShaderInfo(Shader shader, List<string> variants)
         {
             Shader = shader;
             Name = shader.name;
             VariantInfo = new ShaderVariantInfo(variants);
-            Properties = GetShaderProperties(shader);
+            Properties = ShaderMatching.GetShaderProperties(shader);
 
             // TODO: implement cache somewhere here(?)
-        }
-
-        private List<ShaderProperty> GetShaderProperties(UnityEngine.Shader shader)
-        {
-            List<ShaderProperty> properties = new();
-
-            for (int i = 0; i < shader.GetPropertyCount(); i++)
-            {
-                properties.Add(new(shader.GetPropertyName(i), shader.GetPropertyDescription(i), shader.GetPropertyType(i)));
-            }
-
-            return properties;
         }
     }
 }
