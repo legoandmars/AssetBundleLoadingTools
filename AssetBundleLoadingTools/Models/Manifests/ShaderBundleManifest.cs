@@ -16,13 +16,13 @@ namespace AssetBundleLoadingTools.Models.Manifests
     public class ShaderBundleManifest
     {
         [JsonProperty("ManifestEntries")]
-        private List<ShaderBundleManifestEntry> _manifestEntries { get; set; } // hack to work with legacy unity projects
+        private List<ShaderBundleManifestEntry>? _manifestEntries { get; set; } // hack to work with legacy unity projects
 
         [JsonIgnore]
         public Dictionary<string, CompiledShaderInfo> ShadersByBundlePath { get; set; }
 
         [JsonIgnore]
-        public string Path { get; set; }
+        public string? Path { get; set; }
 
         [JsonIgnore]
         public AssetBundle? AssetBundle { get; set; }

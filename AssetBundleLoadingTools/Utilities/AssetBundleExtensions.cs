@@ -10,14 +10,16 @@ namespace AssetBundleLoadingTools.Utilities
 {
     public static class AssetBundleExtensions
     {
-        public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path) where T : Object => LoadAssetSafe<T>(bundle, path, null);
 
         public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
             var asset = bundle.LoadAsset<T>(path);
             var gameObject = GameObjectFromAsset(asset);
 
-            CacheAndSanitizeObject(gameObject, path, hash);
+            if (gameObject != null)
+            {
+                CacheAndSanitizeObject(gameObject, path, hash);
+            }
 
             return asset;
            //var manifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
@@ -26,7 +28,6 @@ namespace AssetBundleLoadingTools.Utilities
         }
 
         // I didn't want to try to do whatever the hell async assetbundle loading actually is, so this is just a task
-        public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path) where T : Object => await LoadAssetAsyncSafe<T> (bundle, path, null);
         public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
             var completion = new TaskCompletionSource<T?>();
@@ -36,7 +37,10 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 var gameObject = GameObjectFromAsset(assetLoadRequest.asset);
 
-                CacheAndSanitizeObject(gameObject, path, hash);
+                if(gameObject != null)
+                {
+                    CacheAndSanitizeObject(gameObject, path, hash);
+                }
 
                 completion.SetResult(assetLoadRequest.asset as T);
             };
@@ -46,7 +50,7 @@ namespace AssetBundleLoadingTools.Utilities
     
         public static GameObject? GameObjectFromAsset<T>(T asset)
         {
-            GameObject gameObject;
+            GameObject? gameObject;
 
             if (asset is GameObject assetAsGameObject)
             {
@@ -71,8 +75,6 @@ namespace AssetBundleLoadingTools.Utilities
 
         private static void CacheAndSanitizeObject(GameObject gameObject, string path, string hash)
         {
-            if (gameObject == null) return;
-
             if (!Plugin.Config.EnableCache)
             {
                 Sanitization.SanitizeObject(gameObject);

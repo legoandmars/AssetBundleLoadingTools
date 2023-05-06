@@ -39,6 +39,9 @@ namespace AssetBundleLoadingTools.Models.Shaders
             Name = name;
             Properties = properties;
             VariantInfo = variantInfo;
+
+            // shader always set by ShaderBundleLoader before call
+            Shader = null!;
         }
 
         public CompiledShaderInfo(Shader shader, List<string> variants)

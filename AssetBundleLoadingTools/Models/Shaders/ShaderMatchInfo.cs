@@ -42,7 +42,7 @@ namespace AssetBundleLoadingTools.Models.Shaders
         }
 
         // debugging
-        [JsonConstructor]
+        /*[JsonConstructor]
         public ShaderMatchInfo(
             List<ShaderProperty> propertiesMissingFromShader,
             List<ShaderProperty> propertiesMissingFromMatchShader, 
@@ -51,7 +51,7 @@ namespace AssetBundleLoadingTools.Models.Shaders
             PropertiesMissingFromShader = propertiesMissingFromShader;
             PropertiesMissingFromMatchShader = propertiesMissingFromMatchShader;
             PropertyConflictInfos = propertyConflictInfos;
-        }
+        }*/
 
         // for non-debugging
         public ShaderMatchInfo(CompiledShaderInfo shaderInfo) 

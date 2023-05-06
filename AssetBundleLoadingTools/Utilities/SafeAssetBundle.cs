@@ -41,6 +41,8 @@ namespace AssetBundleLoadingTools.Utilities
             // TODO: test exceptions are the same
             // loadfromfile stuff here
             var bundle = AssetBundle.LoadFromFile(path, crc, offset);
+            var hash = AssetBundleHashing.FromFile(path);
+
             return new SafeAssetBundle(bundle, AssetBundleInitializationType.File, AssetBundleHashing.FromFile(path), path);
         }
 

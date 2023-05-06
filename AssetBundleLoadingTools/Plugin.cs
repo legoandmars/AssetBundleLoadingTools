@@ -15,16 +15,16 @@ namespace AssetBundleLoadingTools
     [Plugin(RuntimeOptions.SingleStartInit)]
     internal class Plugin
     {
-        internal static Plugin Instance { get; private set; }
+        internal static Plugin Instance { get; private set; } = null!;
         /// <summary>
         /// Use to send log messages through BSIPA.
         /// </summary>
-        internal static IPALogger Log { get; private set; }
+        internal static IPALogger Log { get; private set; } = null!;
 
-        internal static PluginConfig Config { get; private set; }
+        internal static PluginConfig Config { get; private set; } = null!;
 
         [Init]
-        public async void Init(IPALogger logger, IPA.Config.Config config)
+        public void Init(IPALogger logger, IPA.Config.Config config)
         {
             Instance = this;
             Log = logger;
@@ -37,7 +37,7 @@ namespace AssetBundleLoadingTools
 
 
         [OnStart]
-        public async void OnApplicationStart()
+        public void OnApplicationStart()
         {
 
         }
