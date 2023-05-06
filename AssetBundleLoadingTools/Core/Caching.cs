@@ -1,5 +1,6 @@
 ﻿using AssetBundleLoadingTools.Models;
 using AssetBundleLoadingTools.Models.Bundles;
+using AssetBundleLoadingTools.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
@@ -19,51 +20,70 @@ namespace AssetBundleLoadingTools.Core
         private static readonly string _cachedBundleDataPath = Path.Combine(Constants.CachePath, "AssetBundleHashData.dat");
         private static readonly string _cachedShaderDataPath = Path.Combine(Constants.CachePath, "AssetBundleShaderData.dat");
         private static readonly string _warningPath = Path.Combine(Constants.CachePath, "IMPORTANT_WARNING.txt");
+        private static bool _cacheAwaitingWrite = false;
 
         // warning is likely unnecessary but might reduce the odds of people using the cache to allow malicious assetbundles
         private const string _warningText = "WARNING: UNLESS YOU KNOW WHAT YOU ARE DOING, DO ***NOT*** CHANGE ANYTHING IN THIS FOLDER.\nIF SOMEONE TOLD YOU TO CHANGE/PASTE SOMETHING HERE, THEY COULD BE TRICKING YOU INTO INSTALLING MALWARE ON YOUR SYSTEM.";
 
-        private static ConcurrentDictionary<string, BundleSafetyData> _cachedBundleData = new();
+        private static ConcurrentDictionary<string, BundleShaderData> _cachedBundleShaderData = new();
 
         // TODO: r/w more smart to avoid unnecessary disk
         // maybe a 1 second timer or on quit or something
 
         internal static void ReadCache()
         {
-            if (File.Exists(_cachedBundleDataPath))
+            if (File.Exists(_cachedShaderDataPath))
             {
-                var cachedData = File.ReadAllText(_cachedBundleDataPath);
-                _cachedBundleData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, BundleSafetyData>>(cachedData);
-                if (_cachedBundleData == null) _cachedBundleData = new();
+                var cachedData = File.ReadAllText(_cachedShaderDataPath);
+                _cachedBundleShaderData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, BundleShaderData>>(cachedData);
+                if (_cachedBundleShaderData == null) _cachedBundleShaderData = new();
             }
         }
 
-        private static void WriteCache()
+        internal static void WriteCache(object? _ = null)
         {
-            UnityEngine.Debug.Log("WRITING CACHE");
-            if (!Directory.Exists(Constants.CachePath)) Directory.CreateDirectory(Constants.CachePath);
+            if (!_cacheAwaitingWrite) return;
 
-            if (!File.Exists(_warningPath)) File.WriteAllText(_warningPath, _warningText);
+            if (!Directory.Exists(Constants.CachePath))
+            {
+                Directory.CreateDirectory(Constants.CachePath);
+            }
+            if (!File.Exists(_warningPath))
+            {
+                File.WriteAllText(_warningPath, _warningText);
+            }
 
-            File.WriteAllText(_cachedBundleDataPath, JsonConvert.SerializeObject(_cachedBundleData));
+            File.WriteAllText(_cachedShaderDataPath, JsonConvert.SerializeObject(_cachedBundleShaderData));
         }
 
-        internal static void AddBundleDataToCache(string hash, BundleSafetyData data)
+
+        internal static void AddShaderDataToCache(string hash, BundleShaderData data)
         {
-            if (_cachedBundleData.TryGetValue(hash, out BundleSafetyData existingData))
+            if(_cachedBundleShaderData.TryGetValue(hash, out BundleShaderData existingData))
             {
-                // try to save it
-                // this could be a "multiple gameobject LoadAssets in a single" type problem
-                // if IsDangerous is EVER true for a hash, it should ALWAYS be true for that hash.
-                data.IsDangerous = data.IsDangerous || existingData.IsDangerous;
+                if(existingData == data)
+                {
+                    Console.WriteLine("YOU ARE JUST OVERWRITING DATA!");
+                    _cacheAwaitingWrite = true;
+                    return;
+                }
+                // could be multiple assets in same assetbundle hash
+                foreach(var existingInfo in existingData.CompiledShaderInfos)
+                {
+                    if(!data.CompiledShaderInfos.Any(x => ShaderMatching.ShaderInfosMatchOptimized(x, existingInfo)))
+                    {
+                        data.CompiledShaderInfos.Add(existingInfo);
+                    }
+                }
 
-                _cachedBundleData[hash] = data;
+                data.NeedsReplacing = data.CompiledShaderInfos.All(x => x.IsSupported);
 
-                WriteCache();
+                _cachedBundleShaderData[hash] = data;
+                _cacheAwaitingWrite = true;
             }
-            else if (_cachedBundleData.TryAdd(hash, data))
+            else if (_cachedBundleShaderData.TryAdd(hash, data))
             {
-                WriteCache();
+                _cacheAwaitingWrite = true;
             }
             else
             {
@@ -71,9 +91,9 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
-        internal static BundleSafetyData? GetCachedBundleData(string hash)
+        internal static BundleShaderData? GetCachedBundleShaderData(string hash)
         {
-            if (_cachedBundleData.TryGetValue(hash, out BundleSafetyData data))
+            if (_cachedBundleShaderData.TryGetValue(hash, out BundleShaderData data))
             {
                 return data;
             }
@@ -81,17 +101,6 @@ namespace AssetBundleLoadingTools.Core
             {
                 return null;
             }
-        }
-
-        // interoperability between caches
-        internal static string? GetHashFromPath(string path)
-        {
-            foreach (var pair in _cachedBundleData)
-            {
-                if (pair.Value.Path == path) return pair.Key;
-            }
-
-            return null;
         }
     }
 }

@@ -11,6 +11,8 @@ using AssetsTools.NET.Extra;
 using AssetBundleLoadingTools.Models.Shaders;
 using AssetBundleLoadingTools.Core;
 using System.IO;
+using Caching = AssetBundleLoadingTools.Core.Caching;
+using AssetBundleLoadingTools.Models.Bundles;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -30,25 +32,17 @@ namespace AssetBundleLoadingTools.Utilities
 
         private static AssetsManager _assetsManager = new();
 
-        public static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
+        // really needs to be expanded into multiple methods
+        internal static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             if (gameObject == null) return false;
-            var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
 
-            return FixLegacyShadersInternal(gameObject, keywords, hash);
-
-        }
-
-        private static bool FixLegacyShadersInternal(GameObject gameObject, Dictionary<string, List<string>> keywords, string hash)
-        {
+            Dictionary<string, List<string>>? keywords = null;
+            // var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
             bool fixable = true;
 
-            foreach (var shaderKeywordData in keywords)
-            {
-                Debug.Log($"{shaderKeywordData.Key}: {string.Join(", ", shaderKeywordData.Value)}");
-            }
-
             List<Material> sharedMaterials = new();
+            List<Shader> shaders = new();
             List<CompiledShaderInfo> shaderInfos = new();
 
             // TODO: Is there anything that uses shaders that isn't a renderer?
@@ -60,12 +54,61 @@ namespace AssetBundleLoadingTools.Utilities
                     if (material == null || material.shader == null) continue;
 
                     if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
-                    if (!shaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
+                    if (!shaders.Contains(material.shader)) shaders.Add(material.shader);
+                }
+            }
+
+            var shaderCache = Caching.GetCachedBundleShaderData(hash) ?? new BundleShaderData(new List<CompiledShaderInfo>(), true);
+            if (!shaderCache.NeedsReplacing)
+            {
+                return true;
+            }
+
+            foreach (var shader in shaders)
+            {
+                // convert to infos; first check cache
+                if (shaderCache != null)
+                {
+                    bool foundCachedShader = false;
+
+                    foreach (var cachedShader in shaderCache.CompiledShaderInfos)
                     {
-                        shaderInfos.Add(new(material.shader, shaderKeywords));
+                        if(cachedShader == null) continue;
+                        if(ShaderMatching.ShaderInfoIsForShader(cachedShader, shader))
+                        {
+                            // match found, no need to get properties and keywords
+                            // create new object to avoid modifying cached objects
+                            var newShaderInfo = new CompiledShaderInfo(cachedShader.Name, cachedShader.Properties, cachedShader.VariantInfo);
+                            newShaderInfo.Shader = shader;
+
+                            shaderInfos.Add(newShaderInfo);
+
+                            foundCachedShader = true;
+                            break;
+                        }
+                    }
+
+                    if (!foundCachedShader)
+                    {
+                        if(keywords == null)
+                        {
+                            // load keywords for model... this is some SLOW SHIT right now!
+                            keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+                        }
+                        
+                        if(keywords.TryGetValue(shader.name, out var shaderKeywords))
+                        {
+                            var shaderInfo = new CompiledShaderInfo(shader, shaderKeywords);
+                            shaderInfos.Add(shaderInfo);
+
+                            // cache shader
+                            shaderCache.CompiledShaderInfos.Add(shaderInfo);
+                        }
                     }
                 }
             }
+            shaderCache.NeedsReplacing = shaderCache.CompiledShaderInfos.Any(x => !x.IsSupported);
+            Caching.AddShaderDataToCache(hash, shaderCache);
 
             foreach (var shaderInfo in shaderInfos)
             {

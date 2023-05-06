@@ -4,6 +4,7 @@ using HarmonyLib;
 using IPA;
 using IPA.Config.Stores;
 using IPA.Utilities;
+using System.Threading;
 using System.Threading.Tasks;
 using IPALogger = IPA.Logging.Logger;
 
@@ -24,6 +25,7 @@ namespace AssetBundleLoadingTools
         internal static IPALogger Log { get; private set; } = null!;
 
         internal static PluginConfig Config { get; private set; } = null!;
+        private static Timer _configWriteTimer { get; set; } = null!;
 
         [Init]
         public void Init(IPALogger logger, IPA.Config.Config config)
@@ -31,6 +33,7 @@ namespace AssetBundleLoadingTools
             Instance = this;
             Log = logger;
             Config = config.Generated<PluginConfig>();
+            _configWriteTimer = new Timer(Caching.WriteCache, null, 30000, 30000);
 
             Caching.ReadCache();
             var loader = new ShaderBundleLoader();
@@ -47,6 +50,7 @@ namespace AssetBundleLoadingTools
         [OnExit]
         public void OnApplicationQuit()
         {
+            _configWriteTimer.Dispose();
             harmony.UnpatchSelf();
         }
     }

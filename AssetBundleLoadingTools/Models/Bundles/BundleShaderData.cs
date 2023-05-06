@@ -15,14 +15,15 @@ namespace AssetBundleLoadingTools.Models.Bundles
 
     public class BundleShaderData
     {
-        public string Path { get; set; }
+        // TODO: Replce with just ShaderVariantInfo in cache instead of entire shader infos
+        // The other data is not really used
+        // Name isn't enough to make sure CompiledShaderInfos is the same; we'll need to hash it based on name + properties
         public List<CompiledShaderInfo> CompiledShaderInfos { get; set; }
-        public bool NeedsReplacing { get; set; }
+        public bool NeedsReplacing { get; set; } = true;
 
         [JsonConstructor]
-        public BundleShaderData(string path, List<CompiledShaderInfo> compiledShaderInfos, bool needsReplacing)
+        public BundleShaderData(List<CompiledShaderInfo> compiledShaderInfos, bool needsReplacing)
         {
-            Path = path;
             CompiledShaderInfos = compiledShaderInfos;
             NeedsReplacing = needsReplacing;
         }

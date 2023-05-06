@@ -13,6 +13,47 @@ namespace AssetBundleLoadingTools.Utilities
     internal static class ShaderMatching
     {
 
+        // for deserialization/cache; when we don't need detailed info on shader matches
+        internal static bool ShaderInfosMatchOptimized(CompiledShaderInfo shaderInfo, CompiledShaderInfo otherShaderInfo)
+        {
+            return ShaderNameAndPropertiesMatch(shaderInfo.Name, otherShaderInfo.Name, shaderInfo.Properties, otherShaderInfo.Properties);
+        }
+
+        internal static bool ShaderInfoIsForShader(CompiledShaderInfo shaderInfo, Shader shader)
+        {
+            return ShaderNameAndPropertiesMatch(shaderInfo.Name, shader.name, shaderInfo.Properties, GetShaderProperties(shader));
+        }
+
+        private static bool ShaderNameAndPropertiesMatch(string name, string otherName, List<ShaderProperty> properties, List<ShaderProperty> otherProperties)
+        {
+
+            if (name != otherName || properties.Count != otherProperties.Count)
+            {
+                return false;
+            }
+
+            foreach (var property in properties)
+            {
+                bool exists = false;
+                foreach (var otherProperty in otherProperties)
+                {
+                    // unsure if display name necessary
+                    if (
+                        property.Name == otherProperty.Name &&
+                        property.DisplayName == otherProperty.DisplayName &&
+                        property.PropertyType == otherProperty.PropertyType)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists == false) return false;
+            }
+
+            return true;
+        }
+
         internal static ShaderMatchInfo? ShaderInfosMatch(CompiledShaderInfo shaderInfo, CompiledShaderInfo otherShaderInfo)
         {
             if (shaderInfo.Name != otherShaderInfo.Name)

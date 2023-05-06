@@ -75,13 +75,10 @@ namespace AssetBundleLoadingTools.Utilities
 
         private static void CacheAndSanitizeObject(GameObject gameObject, string path, string hash)
         {
-            if (!Plugin.Config.EnableCache)
-            {
-                Sanitization.SanitizeObject(gameObject);
-                return;
-            }
+            Sanitization.SanitizeObject(gameObject);
+            return;
 
-            var bundleData = Caching.GetCachedBundleData(hash);
+            /*var bundleData = Caching.GetCachedBundleData(hash);
             if (bundleData == null)
             {
                 var isDangerous = Sanitization.SanitizeObject(gameObject);
@@ -96,7 +93,7 @@ namespace AssetBundleLoadingTools.Utilities
             else if (bundleData.IsDangerous)
             {
                 Sanitization.SanitizeObject(gameObject);
-            }
+            }*/
         }
 
         internal static async Task<AssetBundle?> LoadAssetBundleFromPathAsync(string path)
