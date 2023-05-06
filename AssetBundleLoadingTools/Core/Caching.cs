@@ -46,7 +46,10 @@ namespace AssetBundleLoadingTools.Core
                 Directory.CreateDirectory(Constants.CachePath);
             }
 
-            File.WriteAllText(_cachedShaderDataPath, JsonConvert.SerializeObject(_cachedBundleShaderData));
+            // TODO: remove prettyprint for production
+            File.WriteAllText(_cachedShaderDataPath, JsonConvert.SerializeObject(_cachedBundleShaderData, Formatting.Indented));
+
+            _cacheAwaitingWrite = false;
         }
 
 

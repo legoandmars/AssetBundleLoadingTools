@@ -21,7 +21,6 @@ namespace AssetBundleLoadingTools.Core
         private static List<ShaderBundleManifest> manifests = new();
         public ShaderBundleLoader() 
         {
-
             if (!Directory.Exists(Constants.ShaderBundlePath))
             {
                 Directory.CreateDirectory(Constants.ShaderBundlePath);
@@ -63,7 +62,7 @@ namespace AssetBundleLoadingTools.Core
             return;
         }
 
-        public static CompiledShaderInfo? GetReplacementShader(CompiledShaderInfo shaderInfo)
+        public static (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
         {
             ShaderMatchInfo? closestMatch = null;
             ShaderBundleManifest? closestManifest = null;
@@ -77,7 +76,7 @@ namespace AssetBundleLoadingTools.Core
                     if (match.ShaderMatchType == ShaderMatchType.FullMatch)
                     {
                         LoadReplacementShaderFromBundle(shader, manifest);
-                        return shader;
+                        return (shader, match);
                     }
 
                     if(closestMatch == null || match.PartialMatchScore < closestMatch.PartialMatchScore)
@@ -88,16 +87,16 @@ namespace AssetBundleLoadingTools.Core
                 }
             }
             
-            if(closestMatch != null && closestMatch.ShaderMatchType == ShaderMatchType.PartialMatch)
+            /*if(closestMatch != null && closestMatch.ShaderMatchType == ShaderMatchType.PartialMatch)
             {
                 LogPartialShaderInfo(closestMatch);
-            }
+            }*/
 
             if(closestMatch != null && closestManifest != null)
             {
                 LoadReplacementShaderFromBundle(closestMatch.ShaderInfo, closestManifest);
             }
-            return closestMatch?.ShaderInfo;
+            return (closestMatch?.ShaderInfo, closestMatch);
         }
 
         // for debugging

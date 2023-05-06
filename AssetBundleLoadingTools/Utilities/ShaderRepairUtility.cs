@@ -138,7 +138,7 @@ namespace AssetBundleLoadingTools.Utilities
                     Debug.Log("HUH");
                     // Debug.Log("NOT SUPPORTED! REPLACE!");
                     // try to get replacement
-                    var replacement = ShaderBundleLoader.GetReplacementShader(shaderInfo);
+                    var (replacement, replacementMatchInfo) = ShaderBundleLoader.GetReplacementShader(shaderInfo);
                     if (replacement == null) 
                     {
                         foreach (var material in sharedMaterials)
@@ -148,19 +148,23 @@ namespace AssetBundleLoadingTools.Utilities
                                 material.shader = null;
                             }
                         }
-
-                        continue;
                     }
-
-                    foreach (var material in sharedMaterials)
+                    else
                     {
-                        if (material.shader == shaderInfo.Shader)
+                        foreach (var material in sharedMaterials)
                         {
-                            Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
-                            material.shader = replacement.Shader;
+                            if (material.shader == shaderInfo.Shader)
+                            {
+                                Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
+                                material.shader = replacement.Shader;
+                            }
                         }
                     }
 
+                    if (Plugin.Config.EnableShaderDebugging)
+                    {
+                        ShaderDebugger.AddInfoToDebugging(hash, new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
+                    }
                     // material.shader = shader;
                 }
             }

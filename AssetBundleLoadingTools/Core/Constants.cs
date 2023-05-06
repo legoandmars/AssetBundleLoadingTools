@@ -18,5 +18,6 @@ namespace AssetBundleLoadingTools.Core
         public static readonly string UserDataPath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "UserData", "AssetBundleLoadingTools");
         public static readonly string CachePath = Path.Combine(UserDataPath, "Cache");
         public static readonly string ShaderBundlePath = Path.Combine(UserDataPath, "ShaderBundles");
+        public static readonly string DebuggingPath = Path.Combine(UserDataPath, "Debugging");
     }
 }

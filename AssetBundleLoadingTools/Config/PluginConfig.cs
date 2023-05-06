@@ -9,5 +9,6 @@ namespace AssetBundleLoadingTools.Config
     public class PluginConfig
     {
         public virtual bool EnableCache { get; set; } = true;
+        public virtual bool EnableShaderDebugging { get; set; } = true;
     }
 }
