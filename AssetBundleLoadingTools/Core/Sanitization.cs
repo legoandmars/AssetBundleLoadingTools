@@ -22,6 +22,13 @@ namespace AssetBundleLoadingTools.Core
         private static FieldInfo _itemsFieldInfo;
         private static FieldInfo _targetAssemblyTypeNameFieldInfo;
 
+        static Sanitization()
+        {
+            _persistentCallGroupFieldInfo = typeof(UnityEventBase).GetField("m_PersistentCalls", _bindings);
+            _persistentCallFieldInfo = _persistentCallGroupFieldInfo.FieldType.GetField("m_Calls", _bindings);
+            _itemsFieldInfo = _persistentCallFieldInfo.FieldType.GetField("_items", _bindings);
+            _targetAssemblyTypeNameFieldInfo = typeof(UnityEventBase).Assembly.GetType("UnityEngine.Events.PersistentCall").GetField("m_TargetAssemblyTypeName", _bindings);
+        }
 
         // Ideally this should just throw when a "dangerous" object is found
         // Unfortunately in unity 2020+ ALL events use the dangerous m_TargetAssemblyTypeName field 
@@ -36,6 +43,7 @@ namespace AssetBundleLoadingTools.Core
             // Ideally somebody just needs to write up a pre-baked list of default unity components that don't touch UnityEvents ever 
             foreach (var component in components)
             {
+                if (component == null) continue;
                 var componentType = component.GetType();
                 if (_dangerousTypeMap.TryGetValue(componentType, out bool existingComponentIsDangerous)){
                     if (!existingComponentIsDangerous) continue;
@@ -54,14 +62,6 @@ namespace AssetBundleLoadingTools.Core
             }
 
             return dangerous;
-        }
-
-        private static void SetCachedFieldInfo()
-        {
-            _persistentCallGroupFieldInfo = typeof(UnityEventBase).GetField("m_PersistentCalls", _bindings);
-            _persistentCallFieldInfo = _persistentCallGroupFieldInfo.FieldType.GetField("m_Calls", _bindings);
-            _itemsFieldInfo = _persistentCallFieldInfo.FieldType.GetField("_items", _bindings);
-            _targetAssemblyTypeNameFieldInfo = typeof(UnityEventBase).Assembly.GetType("UnityEngine.Events.PersistentCall").GetField("m_TargetAssemblyTypeName", _bindings);
         }
 
         // this doesn't actually check if the component is *dangerous* and contains the m_TargetAssemblyTypeName field
@@ -87,8 +87,6 @@ namespace AssetBundleLoadingTools.Core
         // but because all the model mods have separate event systems, there's a high risk of a UnityEvent going undetected
         private static void StripDangerousEventFields(Component component, Type componentType)
         {
-            if (_persistentCallGroupFieldInfo == null) SetCachedFieldInfo();
-
             var fields = componentType.GetFields(_bindings);
 
             foreach (var field in fields)

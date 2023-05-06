@@ -3,6 +3,8 @@ using AssetBundleLoadingTools.Core;
 using HarmonyLib;
 using IPA;
 using IPA.Config.Stores;
+using IPA.Utilities;
+using System.Threading.Tasks;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
@@ -13,25 +15,28 @@ namespace AssetBundleLoadingTools
     [Plugin(RuntimeOptions.SingleStartInit)]
     internal class Plugin
     {
+        internal static Plugin Instance { get; private set; } = null!;
         private static readonly Harmony harmony = new("com.legoandmars.assetbundleloadingtools");
 
-        internal static Plugin Instance { get; private set; }
         /// <summary>
         /// Use to send log messages through BSIPA.
         /// </summary>
-        internal static IPALogger Log { get; private set; }
+        internal static IPALogger Log { get; private set; } = null!;
 
-        internal static PluginConfig Config { get; private set; }
+        internal static PluginConfig Config { get; private set; } = null!;
 
         [Init]
-        public Plugin(IPALogger logger, IPA.Config.Config config)
+        public void Init(IPALogger logger, IPA.Config.Config config)
         {
             Instance = this;
             Log = logger;
             Config = config.Generated<PluginConfig>();
-            
-            BundleCache.ReadCache();
+
+            Caching.ReadCache();
+            var loader = new ShaderBundleLoader();
+            loader.LoadAllBundles();
         }
+
 
         [OnStart]
         public void OnApplicationStart()

@@ -6,6 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
+using AssetsTools.NET;
+using AssetsTools.NET.Extra;
+using AssetBundleLoadingTools.Models.Shaders;
+using AssetBundleLoadingTools.Core;
+using System.IO;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -23,56 +28,128 @@ namespace AssetBundleLoadingTools.Utilities
         // Then you can just do AssetBundle.LoadAllAssets<Shader>() and you're off to the races
         // I'm curious if you would run into problems with the "add a bunch of assets to the assetbundle individually" method after you started getting into the hundreds of shaders in a single file, though...
 
+        private static AssetsManager _assetsManager = new();
 
-        public static bool FixLegacyShaders(GameObject gameObject, string hash)
+        public static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             if (gameObject == null) return false;
+            var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+
+            return FixLegacyShadersInternal(gameObject, keywords, hash);
+
+        }
+
+        private static bool FixLegacyShadersInternal(GameObject gameObject, Dictionary<string, List<string>> keywords, string hash)
+        {
+            bool fixable = true;
+
+            foreach (var shaderKeywordData in keywords)
+            {
+                Debug.Log($"{shaderKeywordData.Key}: {string.Join(", ", shaderKeywordData.Value)}");
+            }
 
             List<Material> sharedMaterials = new();
+            List<CompiledShaderInfo> shaderInfos = new();
 
+            // TODO: Is there anything that uses shaders that isn't a renderer?
             foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
             {
                 if (renderer == null) continue;
                 foreach (var material in renderer.sharedMaterials)
                 {
-                    if (material != null && material.shader != null && !sharedMaterials.Contains(material)) sharedMaterials.Add(material);
+                    if (material == null || material.shader == null) continue;
+
+                    if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
+                    if (!shaderInfos.Any(x => x.Shader == material.shader) && keywords.TryGetValue(material.shader.name, out var shaderKeywords))
+                    {
+                        shaderInfos.Add(new(material.shader, shaderKeywords));
+                    }
                 }
-            
             }
 
-            foreach (var material in sharedMaterials)
+            foreach (var shaderInfo in shaderInfos)
             {
-                var shader = material.shader;
-
-                if (!ShaderSupported(shader))
+                // shader replacement pass
+                if (!shaderInfo.IsSupported)
                 {
-                    // TODO: replace shader
-                    // below could come in useful for shader keyword checking? idk
-                    //shader.keywordSpace.keywordNames
+                    Debug.Log("HUH");
+                    // Debug.Log("NOT SUPPORTED! REPLACE!");
+                    // try to get replacement
+                    var replacement = ShaderBundleLoader.GetReplacementShader(shaderInfo);
+                    if (replacement == null) 
+                    {
+                        foreach (var material in sharedMaterials)
+                        {
+                            if (material.shader == shaderInfo.Shader)
+                            {
+                                material.shader = null;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    foreach (var material in sharedMaterials)
+                    {
+                        if (material.shader == shaderInfo.Shader)
+                        {
+                            Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
+                            material.shader = replacement.Shader;
+                        }
+                    }
+
+                    // material.shader = shader;
                 }
             }
 
-            return true;
+            return fixable;
         }
 
-        private static bool ShaderSupported(Shader shader)
+        private static Shader? GetShaderReplacement(CompiledShaderInfo shaderInfo)
         {
-            // Honestly i'm not really sure how to do this!
-            // The built in shader properties like isSupported don't quite work for what we need
-            // So we need to actually check the keywords the shader was compiled against...
-            // Just going off of Unity Version or whatever would be too unreliable, and we don't want to replace *every* shader if some will already be compiled for the proper render target
-            // I thought it would be easy but unity provides **absolutely ZERO** way to see what variants a shader has, much less which keywords each of those variants has
-            // we need *some* way to quantify if the shader supports UNITY_SINGLE_PASS_STEREO, STEREO_INSTANCING_ON, or both.
-            // This info is easily available deep within the assetbundle, but I'm not sure if there's a sane way to get it
-            // https://i.imgur.com/qD0zXvf.png
-            // https://i.imgur.com/a9nCfug.png
-            // We might have to end up using AssetTools.NET, which I ***REALLY*** want to avoid because it will add a lot of unnecessary complexity and overhead
-            // Alternatively, I could be overthinking this, and there might be some simple solution staring me in the face!
-
-            return true;
+            // unimplemented
+            return null;
         }
 
-        public static bool FixAndDownloadLegacyShaders(GameObject gameObject, string hash)
+        // Not quite the same as global keywords, this includes properties too
+        private static Dictionary<string, List<string>> LoadShaderKeywordsFromBundle(string assetBundlePath)
+        {
+            // Fairly scuffed solution using AssetsTools.NET. this might break things, but it's the only reasonable option unless somebody can figure out how to get the data from DirectX using native code
+
+            var bundle = _assetsManager.LoadBundleFile(assetBundlePath, true);
+            var assetsFileInstance = _assetsManager.LoadAssetsFileFromBundle(bundle, 0, false);
+            var assetsFile = assetsFileInstance.file;
+
+            Dictionary<string, List<string>> keywords = new();
+
+            foreach (var shaderInfo in assetsFile.GetAssetsOfType(AssetClassID.Shader))
+            {
+                var shaderBase = _assetsManager.GetBaseField(assetsFileInstance, shaderInfo);
+
+                var shaderName = shaderBase["m_ParsedForm"]["m_Name"].AsString;
+                keywords[shaderName] = new List<string>();
+
+                var subShaders = shaderBase["m_ParsedForm"]["m_SubShaders.Array"].Children;
+                foreach(var subShader in subShaders)
+                {
+                    var passes = subShader["m_Passes.Array"].Children;
+                    foreach(var pass in passes)
+                    {
+                        var nameIndices = pass["m_NameIndices.Array"].Children;
+                        foreach(var nameIndex in nameIndices)
+                        {
+                            var keywordName = nameIndex["first"].AsString;
+                            if(!keywords[shaderName].Contains(keywordName)) keywords[shaderName].Add(keywordName);
+                        }
+                    }
+                }
+            }
+
+            return keywords;
+        }
+
+
+        public static bool FixAndDownloadLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
         {
             // unimplemented
             // hopefully this will eventually:
@@ -89,7 +166,7 @@ namespace AssetBundleLoadingTools.Utilities
             // Hash, List<Shader> = (ShaderName, List<Properties>)
             // Properties list is very important because some people edit shaders with the same name to have slightly different properties based on usecase
 
-            return FixLegacyShaders(gameObject, hash);
+            return FixLegacyShaders(gameObject, assetBundlePath, hash);
         }
     }
 }

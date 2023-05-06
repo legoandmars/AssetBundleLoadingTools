@@ -3,17 +3,23 @@ using AssetBundleLoadingTools.Models;
 using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Caching = AssetBundleLoadingTools.Core.Caching;
+using AssetBundleLoadingTools.Models.Bundles;
 
 namespace AssetBundleLoadingTools.Utilities
 {
     public static class AssetBundleExtensions
     {
+
         public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
             var asset = bundle.LoadAsset<T>(path);
             var gameObject = GameObjectFromAsset(asset);
 
-            CacheAndSanitizeObject(hash, gameObject);
+            if (gameObject != null)
+            {
+                CacheAndSanitizeObject(gameObject, path, hash);
+            }
 
             return asset;
            //var manifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
@@ -31,7 +37,10 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 var gameObject = GameObjectFromAsset(assetLoadRequest.asset);
 
-                CacheAndSanitizeObject(hash, gameObject);
+                if(gameObject != null)
+                {
+                    CacheAndSanitizeObject(gameObject, path, hash);
+                }
 
                 completion.SetResult(assetLoadRequest.asset as T);
             };
@@ -39,9 +48,9 @@ namespace AssetBundleLoadingTools.Utilities
             return await completion.Task;
         }
     
-        private static GameObject? GameObjectFromAsset<T>(T asset)
+        public static GameObject? GameObjectFromAsset<T>(T asset)
         {
-            GameObject gameObject;
+            GameObject? gameObject;
 
             if (asset is GameObject assetAsGameObject)
             {
@@ -64,32 +73,43 @@ namespace AssetBundleLoadingTools.Utilities
             return gameObject;
         }
 
-        private static void CacheAndSanitizeObject(string hash, GameObject gameObject)
+        private static void CacheAndSanitizeObject(GameObject gameObject, string path, string hash)
         {
-            if (gameObject == null) return;
-
             if (!Plugin.Config.EnableCache)
             {
                 Sanitization.SanitizeObject(gameObject);
                 return;
             }
 
-            var bundleData = BundleCache.GetCachedData(hash);
+            var bundleData = Caching.GetCachedBundleData(hash);
             if (bundleData == null)
             {
                 var isDangerous = Sanitization.SanitizeObject(gameObject);
 
                 if (bundleData == null)
                 {
-                    bundleData = new BundleData(isDangerous);
+                    bundleData = new BundleSafetyData(path, isDangerous);
                 }
 
-                BundleCache.AddToCache(hash, bundleData);
+                Caching.AddBundleDataToCache(hash, bundleData);
             }
             else if (bundleData.IsDangerous)
             {
                 Sanitization.SanitizeObject(gameObject);
             }
+        }
+
+        internal static async Task<AssetBundle?> LoadAssetBundleFromPathAsync(string path)
+        {
+            var completion = new TaskCompletionSource<AssetBundle?>();
+            var assetLoadRequest = AssetBundle.LoadFromFileAsync(path);
+
+            assetLoadRequest.completed += delegate
+            {
+                completion.SetResult(assetLoadRequest.assetBundle);
+            };
+
+            return await completion.Task;
         }
     }
 }
