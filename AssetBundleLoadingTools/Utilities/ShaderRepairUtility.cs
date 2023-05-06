@@ -58,8 +58,21 @@ namespace AssetBundleLoadingTools.Utilities
                 }
             }
 
-            var shaderCache = Caching.GetCachedBundleShaderData(hash) ?? new BundleShaderData(new List<CompiledShaderInfo>(), true);
-            if (!shaderCache.NeedsReplacing)
+            // setup cache
+            // TODO: own method
+            BundleShaderData? shaderCache = null;
+
+            if (Plugin.Config.EnableCache)
+            {
+                shaderCache = Caching.GetCachedBundleShaderData(hash);
+                if(shaderCache == null)
+                {
+                    shaderCache = new BundleShaderData(new List<CompiledShaderInfo>(), true);
+                }
+            }
+            bool cacheEnabled = shaderCache != null && Plugin.Config.EnableCache;
+
+            if (cacheEnabled && !shaderCache!.NeedsReplacing)
             {
                 return true;
             }
@@ -67,11 +80,11 @@ namespace AssetBundleLoadingTools.Utilities
             foreach (var shader in shaders)
             {
                 // convert to infos; first check cache
-                if (shaderCache != null)
-                {
-                    bool foundCachedShader = false;
+                bool foundCachedShader = false;
 
-                    foreach (var cachedShader in shaderCache.CompiledShaderInfos)
+                if (cacheEnabled)
+                {
+                    foreach (var cachedShader in shaderCache!.CompiledShaderInfos)
                     {
                         if(cachedShader == null) continue;
                         if(ShaderMatching.ShaderInfoIsForShader(cachedShader, shader))
@@ -87,28 +100,35 @@ namespace AssetBundleLoadingTools.Utilities
                             break;
                         }
                     }
+                }
 
-                    if (!foundCachedShader)
+                if (!foundCachedShader)
+                {
+                    if (keywords == null)
                     {
-                        if(keywords == null)
-                        {
-                            // load keywords for model... this is some SLOW SHIT right now!
-                            keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
-                        }
-                        
-                        if(keywords.TryGetValue(shader.name, out var shaderKeywords))
-                        {
-                            var shaderInfo = new CompiledShaderInfo(shader, shaderKeywords);
-                            shaderInfos.Add(shaderInfo);
+                        // load keywords for model... this is some SLOW SHIT right now!
+                        keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+                    }
 
+                    if (keywords.TryGetValue(shader.name, out var shaderKeywords))
+                    {
+                        var shaderInfo = new CompiledShaderInfo(shader, shaderKeywords);
+                        shaderInfos.Add(shaderInfo);
+
+                        if (cacheEnabled)
+                        {
                             // cache shader
-                            shaderCache.CompiledShaderInfos.Add(shaderInfo);
+                            shaderCache!.CompiledShaderInfos.Add(shaderInfo);
                         }
                     }
                 }
             }
-            shaderCache.NeedsReplacing = shaderCache.CompiledShaderInfos.Any(x => !x.IsSupported);
-            Caching.AddShaderDataToCache(hash, shaderCache);
+
+            if (cacheEnabled)
+            {
+                shaderCache!.NeedsReplacing = shaderCache.CompiledShaderInfos.Any(x => !x.IsSupported);
+                Caching.AddShaderDataToCache(hash, shaderCache);
+            }
 
             foreach (var shaderInfo in shaderInfos)
             {
