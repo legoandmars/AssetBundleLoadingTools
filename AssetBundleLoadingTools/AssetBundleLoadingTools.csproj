@@ -114,6 +114,10 @@
     <Compile Include="Models\Bundles\AssetBundleInitializationType.cs" />
     <Compile Include="Models\Bundles\SafeAssetBundleCreateRequest.cs" />
     <Compile Include="Models\Manifests\ShaderBundleManifestEntry.cs" />
+    <Compile Include="Models\Properties\PropertyConflictInfo.cs" />
+    <Compile Include="Models\Properties\PropertyConflictType.cs" />
+    <Compile Include="Models\Properties\PropertyMatchInfo.cs" />
+    <Compile Include="Models\Properties\PropertyMatchType.cs" />
     <Compile Include="Utilities\SafeAssetBundle.cs" />
     <Compile Include="Utilities\ReplacementShaderLoader.cs" />
     <Compile Include="Core\Sanitization.cs" />

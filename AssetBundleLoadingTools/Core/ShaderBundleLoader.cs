@@ -1,5 +1,5 @@
 ﻿using AssetBundleLoadingTools.Models.Manifests;
-using AssetBundleLoadingTools.Models.Shader;
+using AssetBundleLoadingTools.Models.Shaders;
 using AssetBundleLoadingTools.Utilities;
 using Newtonsoft.Json;
 using System;

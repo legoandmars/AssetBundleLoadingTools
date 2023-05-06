@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using AssetBundleLoadingTools.Models.Shader;
+using AssetBundleLoadingTools.Models.Shaders;
 using AssetBundleLoadingTools.Core;
 using System.IO;
 

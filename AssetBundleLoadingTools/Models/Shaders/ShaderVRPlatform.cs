@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AssetBundleLoadingTools.Models.Shader
+namespace AssetBundleLoadingTools.Models.Shaders
 {
     [System.Serializable]
     public enum ShaderVRPlatform

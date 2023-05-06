@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine.Rendering;
 
-namespace AssetBundleLoadingTools.Models.Shader
+namespace AssetBundleLoadingTools.Models.Shaders
 {
     public class ShaderProperty
     {

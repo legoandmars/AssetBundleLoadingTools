@@ -1,4 +1,4 @@
-﻿using AssetBundleLoadingTools.Models.Shader;
+﻿using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
