@@ -30,8 +30,6 @@ namespace AssetBundleLoadingTools.Core
 
         public void LoadAllBundles()
         {
-            Debug.Log("SHIT!");
-
             List<string> files = new();
             foreach(var fileExtension in _fileExtensions)
             {
@@ -42,9 +40,6 @@ namespace AssetBundleLoadingTools.Core
             {
                 LoadBundle(file);
             }
-
-            Debug.Log("DONELOADING!");
-            Debug.Log(manifests.Count);
 
             return;
         }
@@ -59,7 +54,7 @@ namespace AssetBundleLoadingTools.Core
             // Really shouldn't need to load these right away *at all*
             var bundleStream = AssetBundleStreamFromZipFile(path);
             if(bundleStream == null) return;
-            var bundle = AssetBundle.LoadFromStream(bundleStream);
+            var bundle = AssetBundle.LoadFromMemory(bundleStream.ToArray());
             manifest.AssetBundle = bundle;
 
             //Debug.Log("why>?")
@@ -93,7 +88,7 @@ namespace AssetBundleLoadingTools.Core
         {
             if (shaderInfo.Shader == null)
             {
-                if(manifest.AssetBundle == null)
+                if (manifest.AssetBundle == null)
                     throw new NullReferenceException(nameof(manifest.AssetBundle));
 
                 foreach(var bundlePathAndShaderInfo in manifest.ShadersByBundlePath)

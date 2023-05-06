@@ -108,8 +108,10 @@ namespace AssetBundleLoadingTools.Utilities
 
         // provided to make generics easier to fix shaders on
         // TODO: Support Shader type
+        // TODO: ASync (this is SO slow)
         public void FixShadersOnLoadedObject<T>(T loadedObject) where T : Object
         {
+            Debug.Log("SHADER? I HARDLY");
             var gameObject = AssetBundleExtensions.GameObjectFromAsset(loadedObject);
             if (gameObject != null)
             {
@@ -127,7 +129,11 @@ namespace AssetBundleLoadingTools.Utilities
                 File.Delete(_bundlePath);
             }
 
-            _bundle.Unload(unloadAllLoadedObjects);
+            if (_bundle != null)
+            {
+                _bundle.Unload(unloadAllLoadedObjects);
+                _bundle = null;
+            }
         }
     }
 }

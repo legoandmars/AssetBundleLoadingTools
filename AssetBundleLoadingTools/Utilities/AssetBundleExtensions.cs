@@ -14,11 +14,6 @@ namespace AssetBundleLoadingTools.Utilities
 
         public static T? LoadAssetSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
-            if (hash == null)
-            {
-                throw new System.Exception("Not a HashedAssetBundle.");
-            }
-
             var asset = bundle.LoadAsset<T>(path);
             var gameObject = GameObjectFromAsset(asset);
 
@@ -34,10 +29,6 @@ namespace AssetBundleLoadingTools.Utilities
         public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path) where T : Object => await LoadAssetAsyncSafe<T> (bundle, path, null);
         public static async Task<T?> LoadAssetAsyncSafe<T>(this AssetBundle bundle, string path, string hash) where T : Object
         {
-            if(hash == null)
-            {
-                throw new System.Exception("Not a HashedAssetBundle.");
-            }
             var completion = new TaskCompletionSource<T?>();
             var assetLoadRequest = bundle.LoadAssetAsync<T>(path);
 

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,6 +40,7 @@ namespace AssetBundleLoadingTools.Core
 
         private static void WriteCache()
         {
+            UnityEngine.Debug.Log("WRITING CACHE");
             if (!Directory.Exists(Constants.CachePath)) Directory.CreateDirectory(Constants.CachePath);
 
             if (!File.Exists(_warningPath)) File.WriteAllText(_warningPath, _warningText);

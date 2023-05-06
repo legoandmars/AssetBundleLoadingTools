@@ -76,13 +76,24 @@ namespace AssetBundleLoadingTools.Utilities
                     // Debug.Log("NOT SUPPORTED! REPLACE!");
                     // try to get replacement
                     var replacement = ShaderBundleLoader.GetReplacementShader(shaderInfo);
-                    if (replacement == null) continue;
+                    if (replacement == null) 
+                    {
+                        foreach (var material in sharedMaterials)
+                        {
+                            if (material.shader == shaderInfo.Shader)
+                            {
+                                material.shader = null;
+                            }
+                        }
+
+                        continue;
+                    }
 
                     foreach (var material in sharedMaterials)
                     {
                         if (material.shader == shaderInfo.Shader)
                         {
-                            Debug.Log("Successfully replaced");
+                            Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
                             material.shader = replacement.Shader;
                         }
                     }
