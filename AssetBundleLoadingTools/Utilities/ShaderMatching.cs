@@ -1,4 +1,5 @@
-﻿using AssetBundleLoadingTools.Models.Shaders;
+﻿using AssetBundleLoadingTools.Models.Properties;
+using AssetBundleLoadingTools.Models.Shaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,46 +13,78 @@ namespace AssetBundleLoadingTools.Utilities
     internal static class ShaderMatching
     {
 
-        internal static bool ShaderInfosMatch(CompiledShaderInfo shaderInfo, CompiledShaderInfo otherShaderInfo)
+        internal static ShaderMatchInfo? ShaderInfosMatch(CompiledShaderInfo shaderInfo, CompiledShaderInfo otherShaderInfo)
         {
-            if (shaderInfo.Name != otherShaderInfo.Name) return false;
+            if (shaderInfo.Name != otherShaderInfo.Name)
+            {
+                return null;
+            }
 
-            bool matchesFully = true;
+            ShaderMatchInfo? matchInfo = new(otherShaderInfo);
 
-            // name matches; check if serialized properties are the same
             // this does not use variants for now as it's a bit too unstable between the three systems
-            // if (otherProperties.Count != Properties.Count) return false;
-            if (shaderInfo.Properties.Count != otherShaderInfo.Properties.Count) matchesFully = false;
+
+            // actually check the other properties instead of just count
+            // if "smart" checking/debugging is unimplemented, you can check count and call it a day
+            // however, we need to check the otherShaderInfo properties to see if there's any *new* properties
+            // if (shaderInfo.Properties.Count != otherShaderInfo.Properties.Count) matchesFully = false;
 
             foreach (var property in shaderInfo.Properties)
             {
-                if (matchesFully == false) break;
                 bool exists = false;
                 foreach (var otherProperty in otherShaderInfo.Properties)
                 {
-                    // unsure if display name necessary
-                    if (
-                        property.Name == otherProperty.Name &&
-                        property.DisplayName == otherProperty.DisplayName &&
-                        property.PropertyType == otherProperty.PropertyType)
+                    // Impossible to have multiple properties with the same name
+                    if(property.Name == otherProperty.Name)
                     {
+                        PropertyConflictType? conflictType = null;
+                        if (property.DisplayName != otherProperty.DisplayName && property.PropertyType != otherProperty.PropertyType)
+                        {
+                            conflictType = PropertyConflictType.DisplayNameAndType;
+                        }
+                        else if (property.DisplayName != otherProperty.DisplayName)
+                        {
+                            conflictType = PropertyConflictType.DisplayName;
+                        }
+                        else if (property.PropertyType != otherProperty.PropertyType)
+                        {
+                            conflictType = PropertyConflictType.Type;
+                        }
+
+                        if (conflictType != null)
+                        {
+                            matchInfo.PropertyConflictInfos.Add(new(property, otherProperty, conflictType.Value));
+                        }
+
                         exists = true;
+                        break;
                     }
                 }
 
-                if (exists == false) matchesFully = false;
+                if (exists == false)
+                {
+                    matchInfo.PropertiesMissingFromMatchShader.Add(property);
+                }
             }
 
-            if (matchesFully == false)
+            foreach (var otherProperty in otherShaderInfo.Properties)
             {
-                // Console.WriteLine($"Name matches between {Name} and {otherName}; properties don't; debug info:");
-                // Console.WriteLine(GetPropertyDiffs(Properties, otherProperties));
-
-                // log
-                return false;
+                bool exists = false;
+                foreach (var property in shaderInfo.Properties)
+                {
+                    if (property.Name == otherProperty.Name)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (exists == false)
+                {
+                    matchInfo.PropertiesMissingFromShader.Add(otherProperty);
+                }
             }
 
-            return true;
+            return matchInfo;
         }
 
         /*internal static bool ShadersMatch(Shader shader, Shader otherShader)

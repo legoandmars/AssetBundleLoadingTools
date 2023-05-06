@@ -8,7 +8,6 @@ namespace AssetBundleLoadingTools.Models.Shaders
 {
     public enum ShaderMatchType
     {
-        NoMatch,
         PartialMatch, // name matches; properties don't
         FullMatch,
     }

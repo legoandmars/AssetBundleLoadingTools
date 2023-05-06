@@ -9,6 +9,7 @@ namespace AssetBundleLoadingTools.Models.Properties
     public enum PropertyConflictType
     {
         DisplayName,
-        Type
+        Type,
+        DisplayNameAndType
     }
 }

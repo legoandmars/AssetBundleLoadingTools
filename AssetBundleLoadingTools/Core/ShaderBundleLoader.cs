@@ -65,22 +65,46 @@ namespace AssetBundleLoadingTools.Core
 
         public static CompiledShaderInfo? GetReplacementShader(CompiledShaderInfo shaderInfo)
         {
+            ShaderMatchInfo? closestMatch = null;
+            ShaderBundleManifest? closestManifest = null;
+
             foreach(var manifest in manifests)
             {
                 foreach(var shader in manifest.ShadersByBundlePath.Values)
                 {
-                    // TODO: return Partial match(?)
-                    if (ShaderMatching.ShaderInfosMatch(shaderInfo, shader))
+                    var match = ShaderMatching.ShaderInfosMatch(shaderInfo, shader);
+                    if (match == null) continue;
+                    if (match.ShaderMatchType == ShaderMatchType.FullMatch)
                     {
-                        // since we're returning it, it WILL get used with .Shader at some point
                         LoadReplacementShaderFromBundle(shader, manifest);
-                        // load from disk
                         return shader;
+                    }
+
+                    if(closestMatch == null || match.PartialMatchScore < closestMatch.PartialMatchScore)
+                    {
+                        closestMatch = match;
+                        closestManifest = manifest;
                     }
                 }
             }
+            
+            if(closestMatch != null && closestMatch.ShaderMatchType == ShaderMatchType.PartialMatch)
+            {
+                LogPartialShaderInfo(closestMatch);
+            }
 
-            return null;
+            if(closestMatch != null && closestManifest != null)
+            {
+                LoadReplacementShaderFromBundle(closestMatch.ShaderInfo, closestManifest);
+            }
+            return closestMatch?.ShaderInfo;
+        }
+
+        // for debugging
+        public static void LogPartialShaderInfo(ShaderMatchInfo matchInfo)
+        {
+            Plugin.Log.Info($"Failed to find full replacement for {matchInfo.ShaderInfo.Name}; only partial match found");
+            Plugin.Log.Info(JsonConvert.SerializeObject(matchInfo));
         }
 
         // TODO: Async

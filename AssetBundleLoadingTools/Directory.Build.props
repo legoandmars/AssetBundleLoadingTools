@@ -4,5 +4,6 @@
 	<PropertyGroup>
 		<ImportBSMTTargets>True</ImportBSMTTargets>
 		<BSMTProjectType>BSIPA</BSMTProjectType>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 </Project>
