@@ -1,9 +1,8 @@
 ﻿using AssetBundleLoadingTools.Config;
 using AssetBundleLoadingTools.Core;
+using HarmonyLib;
 using IPA;
-using IPA.Config;
 using IPA.Config.Stores;
-using IPA.Utilities;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
@@ -14,6 +13,8 @@ namespace AssetBundleLoadingTools
     [Plugin(RuntimeOptions.SingleStartInit)]
     internal class Plugin
     {
+        private static readonly Harmony harmony = new("com.legoandmars.assetbundleloadingtools");
+
         internal static Plugin Instance { get; private set; }
         /// <summary>
         /// Use to send log messages through BSIPA.
@@ -35,14 +36,13 @@ namespace AssetBundleLoadingTools
         [OnStart]
         public void OnApplicationStart()
         {
-
+            harmony.PatchAll();
         }
 
         [OnExit]
         public void OnApplicationQuit()
         {
-
+            harmony.UnpatchSelf();
         }
-
     }
 }
