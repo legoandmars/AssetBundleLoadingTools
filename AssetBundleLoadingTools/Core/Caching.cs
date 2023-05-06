@@ -17,13 +17,10 @@ namespace AssetBundleLoadingTools.Core
     {
         // Shader and "malicious" caching is relatively different (and currently performed at different steps), so they're cached in seperate areas
 
-        private static readonly string _cachedBundleDataPath = Path.Combine(Constants.CachePath, "AssetBundleHashData.dat");
         private static readonly string _cachedShaderDataPath = Path.Combine(Constants.CachePath, "AssetBundleShaderData.dat");
-        private static readonly string _warningPath = Path.Combine(Constants.CachePath, "IMPORTANT_WARNING.txt");
         private static bool _cacheAwaitingWrite = false;
 
         // warning is likely unnecessary but might reduce the odds of people using the cache to allow malicious assetbundles
-        private const string _warningText = "WARNING: UNLESS YOU KNOW WHAT YOU ARE DOING, DO ***NOT*** CHANGE ANYTHING IN THIS FOLDER.\nIF SOMEONE TOLD YOU TO CHANGE/PASTE SOMETHING HERE, THEY COULD BE TRICKING YOU INTO INSTALLING MALWARE ON YOUR SYSTEM.";
 
         private static ConcurrentDictionary<string, BundleShaderData> _cachedBundleShaderData = new();
 
@@ -48,10 +45,6 @@ namespace AssetBundleLoadingTools.Core
             {
                 Directory.CreateDirectory(Constants.CachePath);
             }
-            if (!File.Exists(_warningPath))
-            {
-                File.WriteAllText(_warningPath, _warningText);
-            }
 
             File.WriteAllText(_cachedShaderDataPath, JsonConvert.SerializeObject(_cachedBundleShaderData));
         }
@@ -59,27 +52,11 @@ namespace AssetBundleLoadingTools.Core
 
         internal static void AddShaderDataToCache(string hash, BundleShaderData data)
         {
-            if(_cachedBundleShaderData.TryGetValue(hash, out BundleShaderData existingData))
+            if(_cachedBundleShaderData.TryGetValue(hash, out BundleShaderData existingData) && existingData == data)
             {
-                if(existingData == data)
-                {
-                    Console.WriteLine("YOU ARE JUST OVERWRITING DATA!");
-                    _cacheAwaitingWrite = true;
-                    return;
-                }
-                // could be multiple assets in same assetbundle hash
-                foreach(var existingInfo in existingData.CompiledShaderInfos)
-                {
-                    if(!data.CompiledShaderInfos.Any(x => ShaderMatching.ShaderInfosMatchOptimized(x, existingInfo)))
-                    {
-                        data.CompiledShaderInfos.Add(existingInfo);
-                    }
-                }
-
-                data.NeedsReplacing = data.CompiledShaderInfos.All(x => x.IsSupported);
-
-                _cachedBundleShaderData[hash] = data;
                 _cacheAwaitingWrite = true;
+                // assume changed; don't wanna set up a compare rn
+                return;
             }
             else if (_cachedBundleShaderData.TryAdd(hash, data))
             {
