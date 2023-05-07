@@ -40,6 +40,9 @@ namespace AssetBundleLoadingTools.Core
                 LoadBundle(file);
             }
 
+            Debug.Log("LOADED ALL BUNDLES");
+            Debug.Log(manifests.Count);
+
             return;
         }
 
@@ -57,6 +60,10 @@ namespace AssetBundleLoadingTools.Core
             manifest.AssetBundle = bundle;
 
             //Debug.Log("why>?")
+            if(bundle == null)
+            {
+                Debug.Log("MANIFEST NULL???");
+            }
             manifests.Add(manifest);
 
             return;
