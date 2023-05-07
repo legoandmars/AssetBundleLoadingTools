@@ -108,6 +108,11 @@ namespace AssetBundleLoadingTools.Utilities
             ShaderRepairUtility.FixLegacyShaders(gameObject, _bundlePath, _hash);
         }
 
+        public void FixMaterialFromLoadedGameObject(Material material)
+        {
+            ShaderRepairUtility.ReplaceShaderOnMaterial(material, _bundlePath, _hash);
+        }
+
         // provided to make generics easier to fix shaders on
         // TODO: Support Shader type
         // TODO: ASync (this is SO slow)

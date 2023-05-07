@@ -13,6 +13,7 @@ using AssetBundleLoadingTools.Core;
 using System.IO;
 using Caching = AssetBundleLoadingTools.Core.Caching;
 using AssetBundleLoadingTools.Models.Bundles;
+using System.Security.Policy;
 
 namespace AssetBundleLoadingTools.Utilities
 {
@@ -70,6 +71,7 @@ namespace AssetBundleLoadingTools.Utilities
                     shaderCache = new BundleShaderData(new List<CompiledShaderInfo>(), true);
                 }
             }
+
             bool cacheEnabled = shaderCache != null && Plugin.Config.EnableCache;
 
             if (cacheEnabled && !shaderCache!.NeedsReplacing)
@@ -172,15 +174,138 @@ namespace AssetBundleLoadingTools.Utilities
             return fixable;
         }
 
+        // i am so tired i'm just copy-pasting rn
+        // eventually this will not be copy-pasted and will use shared methods
+        internal static bool ReplaceShaderOnMaterial(Material material, string assetBundlePath, string hash)
+        {
+
+            Dictionary<string, List<string>>? keywords = null;
+
+            List<CompiledShaderInfo> shaderInfos = new();
+
+            // setup cache
+            // TODO: own method
+            BundleShaderData? shaderCache = null;
+
+            if (Plugin.Config.EnableCache)
+            {
+                shaderCache = Caching.GetCachedBundleShaderData(hash);
+                if (shaderCache == null)
+                {
+                    shaderCache = new BundleShaderData(new List<CompiledShaderInfo>(), true);
+                }
+            }
+
+            bool cacheEnabled = shaderCache != null && Plugin.Config.EnableCache;
+
+            if (cacheEnabled && !shaderCache!.NeedsReplacing)
+            {
+                return true;
+            }
+
+
+            // convert to infos; first check cache
+            bool foundCachedShader = false;
+
+            if (cacheEnabled)
+            {
+                foreach (var cachedShader in shaderCache!.CompiledShaderInfos)
+                {
+                    if (cachedShader == null) continue;
+                    if (ShaderMatching.ShaderInfoIsForShader(cachedShader, material.shader))
+                    {
+                        // match found, no need to get properties and keywords
+                        // create new object to avoid modifying cached objects
+                        var newShaderInfo = new CompiledShaderInfo(cachedShader.Name, cachedShader.Properties, cachedShader.VariantInfo);
+                        newShaderInfo.Shader = material.shader;
+
+                        shaderInfos.Add(newShaderInfo);
+
+                        foundCachedShader = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundCachedShader)
+            {
+                if (keywords == null)
+                {
+                    // load keywords for model... this is some SLOW SHIT right now!
+                    keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
+                }
+
+                if (keywords.TryGetValue(material.shader.name, out var shaderKeywords))
+                {
+                    var shaderInfo = new CompiledShaderInfo(material.shader, shaderKeywords);
+                    shaderInfos.Add(shaderInfo);
+
+                    if (cacheEnabled)
+                    {
+                        // cache shader
+                        shaderCache!.CompiledShaderInfos.Add(shaderInfo);
+                    }
+                }
+            }
+
+            if (cacheEnabled)
+            {
+                shaderCache!.NeedsReplacing = shaderCache.CompiledShaderInfos.Any(x => !x.IsSupported);
+                Caching.AddShaderDataToCache(hash, shaderCache);
+            }
+
+            foreach (var shaderInfo in shaderInfos)
+            {
+                // shader replacement pass
+                if (!shaderInfo.IsSupported)
+                {
+                    Debug.Log("HUH");
+                    // Debug.Log("NOT SUPPORTED! REPLACE!");
+                    // try to get replacement
+                    var (replacement, replacementMatchInfo) = ShaderBundleLoader.GetReplacementShader(shaderInfo);
+                    if (replacement == null)
+                    {
+                        if (material.shader == shaderInfo.Shader)
+                        {
+                            material.shader = ShaderBundleLoader.InvalidShader;
+                        }
+                    }
+                    else
+                    {
+                        if (material.shader == shaderInfo.Shader)
+                        {
+                            Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
+                            material.shader = replacement.Shader;
+                        }
+                    }
+
+                    if (Plugin.Config.EnableShaderDebugging)
+                    {
+                        ShaderDebugger.AddInfoToDebugging(hash, new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
+                    }
+                    // material.shader = shader;
+                }
+            }
+
+            return true; // temporary
+        }
+
         private static Shader? GetShaderReplacement(CompiledShaderInfo shaderInfo)
         {
             // unimplemented
             return null;
         }
 
+        // very temporary; just wanted temporary trail support without having to call keywords many times
+        private static Dictionary<string, Dictionary<string, List<string>>> _localKeywordsCache = new(); // what the fuck
+
         // Not quite the same as global keywords, this includes properties too
         private static Dictionary<string, List<string>> LoadShaderKeywordsFromBundle(string assetBundlePath)
         {
+            if(_localKeywordsCache.TryGetValue(assetBundlePath, out var list)) 
+            { 
+                return list; 
+            }
             // Fairly scuffed solution using AssetsTools.NET. this might break things, but it's the only reasonable option unless somebody can figure out how to get the data from DirectX using native code
 
             var bundle = _assetsManager.LoadBundleFile(assetBundlePath, true);
@@ -212,6 +337,7 @@ namespace AssetBundleLoadingTools.Utilities
                 }
             }
 
+            _localKeywordsCache.Add(assetBundlePath, keywords);
             return keywords;
         }
 
