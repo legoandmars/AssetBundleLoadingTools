@@ -11,6 +11,7 @@ namespace AssetBundleLoadingTools.Core
     {
         public const string SinglePassKeyword = "UNITY_SINGLE_PASS_STEREO";
         public const string SinglePassInstancedKeyword = "STEREO_INSTANCING_ON";
+        public const string InvalidShaderName = "ShaderBundleInternal/Invalid";
 
         public const string ManifestFileName = "manifest.json";
         public const string BundleFileName = "shaders.asset";

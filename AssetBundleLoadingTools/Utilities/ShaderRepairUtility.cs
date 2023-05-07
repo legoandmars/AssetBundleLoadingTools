@@ -145,7 +145,7 @@ namespace AssetBundleLoadingTools.Utilities
                         {
                             if (material.shader == shaderInfo.Shader)
                             {
-                                material.shader = null;
+                                material.shader = ShaderBundleLoader.InvalidShader;
                             }
                         }
                     }

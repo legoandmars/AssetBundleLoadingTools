@@ -15,6 +15,7 @@ namespace AssetBundleLoadingTools.Core
 {
     public class ShaderBundleLoader
     {
+        public static Shader? InvalidShader = null;
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
 
         // TODO: unstatic :(
@@ -42,6 +43,22 @@ namespace AssetBundleLoadingTools.Core
 
             Debug.Log("LOADED ALL BUNDLES");
             Debug.Log(manifests.Count);
+
+            foreach(var manifest in manifests)
+            {
+                foreach(var shader in manifest.ShadersByBundlePath.Values)
+                {
+                    if(shader.Name == Constants.InvalidShaderName)
+                    {
+                        LoadReplacementShaderFromBundle(shader, manifest);
+                        InvalidShader = shader.Shader;
+                        break;
+                    }
+                }
+
+                if (InvalidShader != null) break;
+            }
+            // get invalid shader
 
             return;
         }
