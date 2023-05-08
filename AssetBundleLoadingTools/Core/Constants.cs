@@ -16,6 +16,9 @@ namespace AssetBundleLoadingTools.Core
         public const string ManifestFileName = "manifest.json";
         public const string BundleFileName = "shaders.asset";
 
+        public const string ShaderBundleURL = "https://raw.githubusercontent.com/legoandmars/AssetBundleLoadingTools/master/";
+        public const string ShaderBundleDownloadPath = "ShaderBundles/manifest.json";
+
         public static readonly string UserDataPath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "UserData", "AssetBundleLoadingTools");
         public static readonly string CachePath = Path.Combine(UserDataPath, "Cache");
         public static readonly string ShaderBundlePath = Path.Combine(UserDataPath, "ShaderBundles");

@@ -63,6 +63,15 @@ namespace AssetBundleLoadingTools.Core
             return;
         }
 
+        private void LoadBundlesFromWeb(List<string> existingFiles)
+        {
+            var webBundles = ShaderBundleWebService.GetShaderBundles();
+            if(webBundles != null)
+            {
+                Debug.Log(string.Join(", ", webBundles));
+            }
+        }
+
         private void LoadBundle(string path)
         {
             var manifest = ManifestFromZipFile(path);
