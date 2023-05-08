@@ -23,9 +23,10 @@ namespace AssetBundleLoadingTools.Utilities
                 string responseBody = await response.Content.ReadAsStringAsync();
 
                 // Plugin.Log.Info(responseBody);
-                List<string> shaderBundlePaths = JsonConvert.DeserializeObject<List<string>>(responseBody);
+                Dictionary<string, List<string>>? shaderBundlePaths = JsonConvert.DeserializeObject<Dictionary<string, List<string>>?>(responseBody);
+                if (shaderBundlePaths == null || shaderBundlePaths.Count == 0 || !shaderBundlePaths.ContainsKey("ShaderBundles")) return null;
 
-                return shaderBundlePaths;
+                return shaderBundlePaths["ShaderBundles"];
             }
             catch (HttpRequestException e)
             {
