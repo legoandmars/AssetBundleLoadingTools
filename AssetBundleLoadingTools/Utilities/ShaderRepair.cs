@@ -21,12 +21,8 @@ namespace AssetBundleLoadingTools.Utilities
     {
         public static bool FixShadersOnGameObject(GameObject gameObject)
         {
-            if (!UnityGame.OnMainThread)
-            {
-                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
-            }
+            MainThreadCheck();
 
-            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var materials = GetMaterialsFromGameObject(gameObject);
             var shaderInfos = GetShaderInfosFromMaterials(materials);
 
@@ -35,10 +31,8 @@ namespace AssetBundleLoadingTools.Utilities
 
         public static async Task<bool> FixShadersOnGameObjectAsync(GameObject gameObject)
         {
-            if (!UnityGame.OnMainThread)
-            {
-                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
-            }
+            MainThreadCheck();
+            await ShaderBundleLoader.Instance.WaitForWebBundles(); // wait to catch up on "new" online bundles 
 
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var materials = GetMaterialsFromGameObject(gameObject);
@@ -50,12 +44,8 @@ namespace AssetBundleLoadingTools.Utilities
         public static bool FixShaderOnMaterial(Material material) => FixShadersOnMaterials(new List<Material>() { material });
         public static bool FixShadersOnMaterials(List<Material> materials)
         {
-            if (!UnityGame.OnMainThread)
-            {
-                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
-            }
+            MainThreadCheck();
 
-            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var shaderInfos = GetShaderInfosFromMaterials(materials);
 
             return ReplaceShaders(materials, shaderInfos);
@@ -64,15 +54,20 @@ namespace AssetBundleLoadingTools.Utilities
         public static async Task<bool> FixShaderOnMaterialAsync(Material material) => await FixShadersOnMaterialsAsync(new List<Material>() { material });
         public static async Task<bool> FixShadersOnMaterialsAsync(List<Material> materials)
         {
+            MainThreadCheck();
+            await ShaderBundleLoader.Instance.WaitForWebBundles(); // wait to catch up on "new" online bundles 
+
+            var shaderInfos = GetShaderInfosFromMaterials(materials);
+
+            return await ReplaceShadersAsync(materials, shaderInfos);
+        }
+
+        private static void MainThreadCheck()
+        {
             if (!UnityGame.OnMainThread)
             {
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
-
-            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
-            var shaderInfos = GetShaderInfosFromMaterials(materials);
-
-            return await ReplaceShadersAsync(materials, shaderInfos);
         }
 
         private static async Task<bool> ReplaceShadersAsync(List<Material> materials, List<CompiledShaderInfo> shaderInfos)

@@ -19,9 +19,10 @@ namespace AssetBundleLoadingTools.Core
         public static ShaderBundleLoader Instance { get; private set; } = new();
 
         public Shader? InvalidShader = null;
-
+        public bool WebBundlesLoaded = false;
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
         private List<ShaderBundleManifest> _manifests = new();
+        private int _maxWebBundleLoadTimeoutMs = 30000;
 
         public ShaderBundleLoader() 
         {
@@ -31,6 +32,7 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
+        // This ideally should not ever be called! but we need a 
         public void LoadAllBundles()
         {
             Plugin.Log.Info("Loading shaderbundles...");
@@ -41,19 +43,13 @@ namespace AssetBundleLoadingTools.Core
                 files.AddRange(Directory.GetFiles(Constants.ShaderBundlePath, fileExtension));
             }
 
-            // No async HttpClient, don't want to look into other solution right now
-            var webBundlesTask = Task.Run(() => ShaderBundleWebService.DownloadAllShaderBundles(Constants.ShaderBundlePath, files));
-            webBundlesTask.Wait();
-            var webBundles = webBundlesTask.Result;
-            files.AddRange(webBundles);
-
             foreach (var file in files)
             {
                 var manifest = ManifestFromZipFile(file);
                 var bundleStream = AssetBundleStreamFromZipFile(file);
                 if (manifest == null || bundleStream == null) continue;
 
-                var bundle = AssetBundle.LoadFromStream(bundleStream);
+                var bundle = AssetBundle.LoadFromStream(bundleStream); // Needs main thread
                 if (bundle == null) continue;
 
                 manifest.Path = file;
@@ -68,7 +64,7 @@ namespace AssetBundleLoadingTools.Core
                 {
                     if (shader.Name != Constants.InvalidShaderName) continue;
 
-                    LoadReplacementShaderFromBundle(shader, manifest);
+                    LoadReplacementShaderFromBundle(shader, manifest); // Needs main thread
                     InvalidShader = shader.Shader;
                     break;
                 }
@@ -77,6 +73,76 @@ namespace AssetBundleLoadingTools.Core
             }
 
             Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
+        }
+
+        // will be awaited by the async ShaderRepair methods; sync methods aren't so lucky
+        public async void LoadExtraWebBundlesAsync()
+        {
+            List<string> files = new();
+            foreach (var fileExtension in _fileExtensions)
+            {
+                files.AddRange(Directory.GetFiles(Constants.ShaderBundlePath, fileExtension));
+            }
+
+            // Search for web bundles
+            var webBundles = await ShaderBundleWebService.DownloadAllShaderBundles(Constants.ShaderBundlePath, files);
+
+            if (webBundles.Count == 0)
+            {
+                WebBundlesLoaded = true;
+                return;
+            }
+
+            foreach (var file in webBundles)
+            {
+                var manifest = ManifestFromZipFile(file);
+                var bundleStream = AssetBundleStreamFromZipFile(file);
+                if (manifest == null || bundleStream == null) continue;
+
+                var bundle = await LoadAssetBundleFromStreamAsync(bundleStream); // Needs main thread
+                if (bundle == null) continue;
+
+                manifest.Path = file;
+                manifest.AssetBundle = bundle;
+
+                _manifests.Add(manifest);
+            }
+
+            foreach(var manifest in _manifests)
+            {
+                if (InvalidShader != null) break;
+
+                foreach (var shader in manifest.ShadersByBundlePath.Values)
+                {
+                    if (shader.Name != Constants.InvalidShaderName) continue;
+
+                    await LoadReplacementShaderFromBundleAsync(shader, manifest); // Needs main thread
+                    InvalidShader = shader.Shader;
+                    break;
+                }
+            }
+
+            Plugin.Log.Info($"(Web Bundles) Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
+
+            WebBundlesLoaded = true;
+        }
+
+        public async Task WaitForWebBundles()
+        {
+            int totalMsWaited = 0;
+            while (!WebBundlesLoaded)
+            {
+                await Task.Delay(10);
+                totalMsWaited += 10;
+                
+                if(totalMsWaited > _maxWebBundleLoadTimeoutMs)
+                {
+                    WebBundlesLoaded = true; // probably broken; exit condition just in case the web request has something HORRIBLE happen
+                    break;
+                }
+            }
+
+            return;
         }
 
         public (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
@@ -207,6 +273,19 @@ namespace AssetBundleLoadingTools.Core
             seekableStream.Position = 0;
             
             return seekableStream;
+        }
+
+        private async Task<AssetBundle?> LoadAssetBundleFromStreamAsync(Stream stream)
+        {
+            var completion = new TaskCompletionSource<AssetBundle?>();
+            var assetLoadRequest = AssetBundle.LoadFromStreamAsync(stream);
+
+            assetLoadRequest.completed += delegate
+            {
+                completion.SetResult(assetLoadRequest.assetBundle);
+            };
+
+            return await completion.Task;
         }
 
         private async Task<Shader?> LoadShaderFromPathAsync(AssetBundle bundle, string assetName)

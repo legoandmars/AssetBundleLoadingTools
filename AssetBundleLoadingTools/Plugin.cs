@@ -48,8 +48,9 @@ namespace AssetBundleLoadingTools
             // "The AssetBundle 'IO.Stream' can't be loaded because another AssetBundle with the same files is already loaded."
             // Completely unavoidable even if you JUST started loading - unity REALLY does not like you trying to load assetbundles with the same name (even if the files are completely different)
             ShaderBundleLoader.Instance.LoadAllBundles();
-        }
 
+            ShaderBundleLoader.Instance.LoadExtraWebBundlesAsync();
+        }
 
         [OnStart]
         public void OnApplicationStart()
