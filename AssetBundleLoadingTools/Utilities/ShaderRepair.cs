@@ -1,19 +1,11 @@
-﻿using System;
+﻿using AssetBundleLoadingTools.Core;
+using AssetBundleLoadingTools.Models.Shaders;
+using IPA.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Rendering;
-using AssetsTools.NET;
-using AssetsTools.NET.Extra;
-using AssetBundleLoadingTools.Models.Shaders;
-using AssetBundleLoadingTools.Core;
-using System.IO;
-using AssetBundleLoadingTools.Models.Bundles;
-using System.Security.Policy;
-using IPA.Utilities;
 
 namespace AssetBundleLoadingTools.Utilities
 {

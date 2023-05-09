@@ -1,18 +1,13 @@
 ﻿using AssetBundleLoadingTools.Models.Properties;
-using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AssetBundleLoadingTools.Models.Shaders
 {
     // mostly used for debug logging. if no debug logging is necessary, we just need PropertyMatchType and MatchShaderInfo (unless we want smarter shader matching)
     // i would like to do "smart" shader matching eventually (such as replacing _Tex with _MainTex if it's the only difference)
     // this should mostly be set up for that, but a system for the actual rules needs to be developed, and I don't feel like it right now
-    public class ShaderMatchInfo
+    internal class ShaderMatchInfo
     {
         [JsonIgnore]
         public CompiledShaderInfo ShaderInfo { get; set; }

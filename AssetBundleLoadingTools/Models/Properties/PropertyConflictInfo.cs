@@ -1,14 +1,9 @@
 ﻿using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AssetBundleLoadingTools.Models.Properties
 {
-    public class PropertyConflictInfo
+    internal class PropertyConflictInfo
     {
         public ShaderProperty ShaderProperty { get; set; }
         public ShaderProperty MatchShaderProperty { get; set; }

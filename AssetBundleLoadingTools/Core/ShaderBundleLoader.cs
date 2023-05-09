@@ -8,13 +8,12 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
 namespace AssetBundleLoadingTools.Core
 {
-    public class ShaderBundleLoader
+    internal class ShaderBundleLoader
     {
         public static ShaderBundleLoader Instance { get; private set; } = new();
 

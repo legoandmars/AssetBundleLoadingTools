@@ -1,19 +1,15 @@
 ﻿using AssetBundleLoadingTools.Models.Shaders;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using UnityEngine;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Runtime.Serialization;
+using UnityEngine;
 
 namespace AssetBundleLoadingTools.Models.Manifests
 {
     // Specifically needs a manifest because in-editor serialization is done with unity's JSON
     // Which, *somehow*, still cannot serialize a List<> or Dictionary<>
 
-    public class ShaderBundleManifest
+    internal class ShaderBundleManifest
     {
         [JsonProperty("ManifestEntries")]
         private List<ShaderBundleManifestEntry>? _manifestEntries { get; set; } // hack to work with legacy unity projects

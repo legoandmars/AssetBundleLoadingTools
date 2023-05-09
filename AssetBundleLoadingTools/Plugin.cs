@@ -3,10 +3,7 @@ using AssetBundleLoadingTools.Core;
 using HarmonyLib;
 using IPA;
 using IPA.Config.Stores;
-using IPA.Utilities;
-using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AssetBundleLoadingTools
@@ -49,7 +46,14 @@ namespace AssetBundleLoadingTools
             // Completely unavoidable even if you JUST started loading - unity REALLY does not like you trying to load assetbundles with the same name (even if the files are completely different)
             ShaderBundleLoader.Instance.LoadAllBundles();
 
-            ShaderBundleLoader.Instance.LoadExtraWebBundlesAsync();
+            if (Config.DownloadNewBundles)
+            {
+                ShaderBundleLoader.Instance.LoadExtraWebBundlesAsync();
+            }
+            else
+            {
+                ShaderBundleLoader.Instance.WebBundlesLoaded = true;
+            }
         }
 
         [OnStart]
