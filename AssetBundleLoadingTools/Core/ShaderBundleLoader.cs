@@ -22,9 +22,6 @@ namespace AssetBundleLoadingTools.Core
 
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
         private List<ShaderBundleManifest> _manifests = new();
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        private bool _loaded = false;
-        private bool _loadingStarted = false;
 
         public ShaderBundleLoader() 
         {
@@ -34,26 +31,9 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
-        // This ideally should not ever be called! but we need a 
-        public void LoadAllBundlesIfNeeded()
+        public void LoadAllBundles()
         {
-            if (_loaded) return;
             Plugin.Log.Info("Loading shaderbundles...");
-
-            if (_loadingStarted)
-            {
-                // async is already running; cancel
-
-                _cancellationTokenSource.Cancel();
-
-                foreach (var existingManifest in _manifests)
-                {
-                    existingManifest.AssetBundle?.Unload(true);
-                }
-                _manifests.Clear();
-            }
-
-            _loadingStarted = true;
 
             List<string> files = new();
             foreach (var fileExtension in _fileExtensions)
@@ -73,7 +53,7 @@ namespace AssetBundleLoadingTools.Core
                 var bundleStream = AssetBundleStreamFromZipFile(file);
                 if (manifest == null || bundleStream == null) continue;
 
-                var bundle = AssetBundle.LoadFromStream(bundleStream); // Needs main thread
+                var bundle = AssetBundle.LoadFromStream(bundleStream);
                 if (bundle == null) continue;
 
                 manifest.Path = file;
@@ -88,7 +68,7 @@ namespace AssetBundleLoadingTools.Core
                 {
                     if (shader.Name != Constants.InvalidShaderName) continue;
 
-                    LoadReplacementShaderFromBundle(shader, manifest); // Needs main thread
+                    LoadReplacementShaderFromBundle(shader, manifest);
                     InvalidShader = shader.Shader;
                     break;
                 }
@@ -97,104 +77,6 @@ namespace AssetBundleLoadingTools.Core
             }
 
             Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
-            _loaded = true;
-        }
-
-        public async Task LoadAllBundlesIfNeededAsync(CancellationToken? cancellationToken = null)
-        {
-            if (_loaded) return;
-            Plugin.Log.Info("Loading shaderbundles (async)...");
-
-            if (cancellationToken == null)
-            {
-                cancellationToken = _cancellationTokenSource.Token;
-            }
-
-            if (_loadingStarted || cancellationToken.Value.IsCancellationRequested)
-            {
-                await WaitForBundleToLoad();
-                return;
-            }
-
-            _loadingStarted = true;
-
-            List<string> files = new();
-            foreach(var fileExtension in _fileExtensions)
-            {
-                files.AddRange(Directory.GetFiles(Constants.ShaderBundlePath, fileExtension));
-            }
-
-            // Search for web bundles
-            var webBundles = await ShaderBundleWebService.DownloadAllShaderBundles(Constants.ShaderBundlePath, files);
-            files.AddRange(webBundles);
-
-            foreach(var file in files)
-            {
-                if (cancellationToken.Value.IsCancellationRequested)
-                {
-                    await WaitForBundleToLoad();
-                    return;
-                }
-
-                var manifest = ManifestFromZipFile(file);
-                var bundleStream = AssetBundleStreamFromZipFile(file);
-                if (manifest == null || bundleStream == null) continue;
-
-                var bundle = await LoadAssetBundleFromStreamAsync(bundleStream); // Needs main thread
-                if (bundle == null) continue;
-
-                if (cancellationToken.Value.IsCancellationRequested)
-                {
-                    await WaitForBundleToLoad();
-
-                    // force overwrite; sync method has fucked bundles but we can still save it
-                    // TODO: double check invalid shader is getting loaded. frankly the whole "invalid shader" bit needs to be rewritten anyways
-                    manifest.Path = file;
-                    manifest.AssetBundle = bundle;
-
-                    _manifests.Add(manifest);
-
-                    Plugin.Log.Info($"Force loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
-                    return;
-                }
-
-                manifest.Path = file;
-                manifest.AssetBundle = bundle;
-
-                _manifests.Add(manifest);
-            }
-
-            foreach(var manifest in _manifests)
-            {
-                foreach(var shader in manifest.ShadersByBundlePath.Values)
-                {
-                    if (shader.Name != Constants.InvalidShaderName) continue;
-
-                    if (cancellationToken.Value.IsCancellationRequested)
-                    {
-                        await WaitForBundleToLoad();
-                        return;
-                    }
-
-                    await LoadReplacementShaderFromBundleAsync(shader, manifest); // Needs main thread
-                    InvalidShader = shader.Shader;
-                    break;
-                }
-
-                if (InvalidShader != null) break;
-            }
-
-            Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
-            _loaded = true;
-        }
-
-        public async Task WaitForBundleToLoad()
-        {
-            while (!_loaded)
-            {
-                await Task.Delay(10);
-            }
-            return;
         }
 
         public (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
@@ -325,19 +207,6 @@ namespace AssetBundleLoadingTools.Core
             seekableStream.Position = 0;
             
             return seekableStream;
-        }
-
-        private async Task<AssetBundle?> LoadAssetBundleFromStreamAsync(Stream stream)
-        {
-            var completion = new TaskCompletionSource<AssetBundle?>();
-            var assetLoadRequest = AssetBundle.LoadFromStreamAsync(stream);
-
-            assetLoadRequest.completed += delegate
-            {
-                completion.SetResult(assetLoadRequest.assetBundle);
-            };
-
-            return await completion.Task;
         }
 
         private async Task<Shader?> LoadShaderFromPathAsync(AssetBundle bundle, string assetName)

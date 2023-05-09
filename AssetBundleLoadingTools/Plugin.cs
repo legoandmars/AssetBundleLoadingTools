@@ -39,6 +39,15 @@ namespace AssetBundleLoadingTools
             {
                 _debuggerWriteTimer = new Timer(ShaderDebugger.SerializeDebuggingInfo, null, 30000, 30000);
             }
+
+            // Not ideal for the synchronous load time addition, but unfortunately necessary if we want to support synchronous ShaderRepair support
+            // Might eventually become more of a problem load-time wise; for now there's relatively few bundles so i'm not too worried
+            // Because of how Unity AssetBundle loading works, say the following situation comes up:
+            // LoadAllBundlesAsync()[starting] -> LoadAllBundlesSync()[starting] -> LoadAllBundlesSync()[ending] ->LoadAllBundlesAsync()[ending]
+            // If the async method is halfway through loading an assetbundle, then suddenly a LoadAllBundlesSync call blocks the main thread, Unity throws this exception:
+            // "The AssetBundle 'IO.Stream' can't be loaded because another AssetBundle with the same files is already loaded."
+            // Completely unavoidable even if you JUST started loading - unity REALLY does not like you trying to load assetbundles with the same name (even if the files are completely different)
+            ShaderBundleLoader.Instance.LoadAllBundles();
         }
 
 

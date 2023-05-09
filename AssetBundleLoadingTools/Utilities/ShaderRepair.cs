@@ -26,8 +26,6 @@ namespace AssetBundleLoadingTools.Utilities
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
 
-            ShaderBundleLoader.Instance.LoadAllBundlesIfNeeded();
-
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var materials = GetMaterialsFromGameObject(gameObject);
             var shaderInfos = GetShaderInfosFromMaterials(materials);
@@ -41,8 +39,6 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
-
-            await ShaderBundleLoader.Instance.LoadAllBundlesIfNeededAsync();
 
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var materials = GetMaterialsFromGameObject(gameObject);
@@ -59,8 +55,6 @@ namespace AssetBundleLoadingTools.Utilities
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
 
-            ShaderBundleLoader.Instance.LoadAllBundlesIfNeeded();
-
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var shaderInfos = GetShaderInfosFromMaterials(materials);
 
@@ -74,8 +68,6 @@ namespace AssetBundleLoadingTools.Utilities
             {
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
-
-            await ShaderBundleLoader.Instance.LoadAllBundlesIfNeededAsync();
 
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
             var shaderInfos = GetShaderInfosFromMaterials(materials);
