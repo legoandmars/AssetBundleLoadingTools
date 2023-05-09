@@ -17,7 +17,7 @@ using IPA.Utilities;
 
 namespace AssetBundleLoadingTools.Utilities
 {
-    public static class ShaderRepairUtility
+    public static class ShaderRepair
     {
         public static bool FixShadersOnGameObject(GameObject gameObject)
         {
