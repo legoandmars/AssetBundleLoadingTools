@@ -16,7 +16,7 @@ namespace AssetBundleLoadingTools.Core
 {
     public class ShaderBundleLoader
     {
-        public static ShaderBundleLoader Instance { get; private set; }
+        public static ShaderBundleLoader Instance { get; private set; } = null!;
 
         public Shader? InvalidShader = null;
 
@@ -33,7 +33,7 @@ namespace AssetBundleLoadingTools.Core
                 Directory.CreateDirectory(Constants.ShaderBundlePath);
             }
 
-            if(Instance == null)
+            if (Instance == null)
             {
                 Instance = this;
             }
