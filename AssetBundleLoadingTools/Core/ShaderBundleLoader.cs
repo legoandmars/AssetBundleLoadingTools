@@ -143,6 +143,21 @@ namespace AssetBundleLoadingTools.Core
                 var bundle = await LoadAssetBundleFromStreamAsync(bundleStream); // Needs main thread
                 if (bundle == null) continue;
 
+                if (cancellationToken.Value.IsCancellationRequested)
+                {
+                    await WaitForBundleToLoad();
+
+                    // force overwrite; sync method has fucked bundles but we can still save it
+                    // TODO: double check invalid shader is getting loaded. frankly the whole "invalid shader" bit needs to be rewritten anyways
+                    manifest.Path = file;
+                    manifest.AssetBundle = bundle;
+
+                    _manifests.Add(manifest);
+
+                    Plugin.Log.Info($"Force loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
+                    return;
+                }
+
                 manifest.Path = file;
                 manifest.AssetBundle = bundle;
 
