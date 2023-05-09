@@ -20,15 +20,140 @@ namespace AssetBundleLoadingTools.Utilities
 {
     public static class ShaderRepairUtility
     {
-        public static async Task<bool> FixShadersOnGameObject(GameObject gameObject)
+        public static bool FixShadersOnGameObject(GameObject gameObject)
         {
             if (!UnityGame.OnMainThread)
             {
                 throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
             }
 
+            ShaderBundleLoader.Instance.LoadAllBundlesIfNeeded();
+
+            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
+            var materials = GetMaterialsFromGameObject(gameObject);
+            var shaderInfos = GetShaderInfosFromMaterials(materials);
+
+            return ReplaceShaders(materials, shaderInfos);
+        }
+
+        public static async Task<bool> FixShadersOnGameObjectAsync(GameObject gameObject)
+        {
+            if (!UnityGame.OnMainThread)
+            {
+                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
+            }
+
+            await ShaderBundleLoader.Instance.LoadAllBundlesIfNeededAsync();
+
+            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
+            var materials = GetMaterialsFromGameObject(gameObject);
+            var shaderInfos = GetShaderInfosFromMaterials(materials);
+
+            return await ReplaceShadersAsync(materials, shaderInfos);
+        }
+
+        private static async Task<bool> ReplaceShadersAsync(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
+        {
+            foreach (var shaderInfo in shaderInfos)
+            {
+                if (shaderInfo.IsSupported) continue;
+
+                var (replacement, replacementMatchInfo) = await ShaderBundleLoader.Instance.GetReplacementShaderAsync(shaderInfo); // main async difference is how assetbundle.load is called
+
+                foreach (var material in materials)
+                {
+                    if (material.shader != shaderInfo.Shader) continue;
+
+                    if (replacement != null)
+                    {
+                        material.shader = replacement.Shader;
+                    }
+                    else
+                    {
+                        material.shader = ShaderBundleLoader.Instance.InvalidShader;
+                    }
+                }
+
+                if (Plugin.Config.EnableShaderDebugging)
+                {
+                    ShaderDebugger.AddInfoToDebugging(new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
+                }
+            }
+
             return true;
         }
+
+        private static bool ReplaceShaders(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
+        {
+            foreach (var shaderInfo in shaderInfos)
+            {
+                if (shaderInfo.IsSupported) continue;
+
+                var (replacement, replacementMatchInfo) = ShaderBundleLoader.Instance.GetReplacementShader(shaderInfo); // main async difference is how assetbundle.load is called
+
+                foreach (var material in materials)
+                {
+                    if (material.shader != shaderInfo.Shader) continue;
+
+                    if (replacement != null)
+                    {
+                        material.shader = replacement.Shader;
+                    }
+                    else
+                    {
+                        material.shader = ShaderBundleLoader.Instance.InvalidShader;
+                    }
+                }
+
+                if (Plugin.Config.EnableShaderDebugging)
+                {
+                    ShaderDebugger.AddInfoToDebugging(new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
+                }
+            }
+
+            return true;
+        }
+
+        private static List<CompiledShaderInfo> GetShaderInfosFromMaterials(List<Material> materials) 
+        {
+            var shaders = materials.Select(x => x.shader).Distinct();
+            List<CompiledShaderInfo> shaderInfos = new();
+
+            foreach (var shader in shaders)
+            {
+                var shaderInfo = new CompiledShaderInfo(shader, GetKeywordsFromShader(shader));
+                shaderInfos.Add(shaderInfo);
+            }
+
+            return shaderInfos;
+        }
+
+        private static List<Material> GetMaterialsFromGameObject(GameObject gameObject)
+        {
+            List<Material> sharedMaterials = new();
+
+            // TODO: Is there anything that uses shaders that isn't a renderer?
+            foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == null) continue;
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    if (material == null || material.shader == null) continue;
+
+                    if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
+                }
+            }
+
+            return sharedMaterials;
+        }
+
+        private static List<string> GetKeywordsFromShader(Shader shader)
+        {
+            // Hardcoded for now, eventually swapped in for pointer magic
+
+            return new List<string> { Constants.SinglePassKeyword };
+        }
+
         // Ideally "new" fixed shaders will be distributed in easy to open AssetBundles that you can just load if necessary
         // I've been doing this internally for testing with the following structure:
         // Prefab Assets/_Shaders.prefab

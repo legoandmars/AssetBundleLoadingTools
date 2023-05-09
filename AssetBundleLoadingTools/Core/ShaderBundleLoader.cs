@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -22,8 +23,8 @@ namespace AssetBundleLoadingTools.Core
         public bool LoadingStarted = false;
 
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
-
         private List<ShaderBundleManifest> _manifests = new();
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public ShaderBundleLoader() 
         {
@@ -39,8 +40,17 @@ namespace AssetBundleLoadingTools.Core
         }
 
         // This ideally should not ever be called! but we need a 
-        public void LoadAllBundles()
+        public void LoadAllBundlesIfNeeded()
         {
+            if (Loaded) return;
+
+            if (LoadingStarted)
+            {
+                // async is already running; cancel
+
+                _cancellationTokenSource.Cancel();
+            }
+
             LoadingStarted = true;
 
             List<string> files = new();
@@ -88,8 +98,21 @@ namespace AssetBundleLoadingTools.Core
             Loaded = true;
         }
 
-        public async Task LoadAllBundlesAsync()
+        public async Task LoadAllBundlesIfNeededAsync(CancellationToken? cancellationToken = null)
         {
+            if (Loaded) return;
+
+            if (cancellationToken == null)
+            {
+                cancellationToken = _cancellationTokenSource.Token;
+            }
+
+            if (LoadingStarted || cancellationToken.Value.IsCancellationRequested)
+            {
+                await WaitForBundleToLoad();
+                return;
+            }
+
             LoadingStarted = true;
 
             List<string> files = new();
@@ -104,6 +127,12 @@ namespace AssetBundleLoadingTools.Core
 
             foreach(var file in files)
             {
+                if (cancellationToken.Value.IsCancellationRequested)
+                {
+                    await WaitForBundleToLoad();
+                    return;
+                }
+
                 var manifest = ManifestFromZipFile(file);
                 var bundleStream = AssetBundleStreamFromZipFile(file);
                 if (manifest == null || bundleStream == null) continue;
@@ -123,6 +152,12 @@ namespace AssetBundleLoadingTools.Core
                 {
                     if (shader.Name != Constants.InvalidShaderName) continue;
 
+                    if (cancellationToken.Value.IsCancellationRequested)
+                    {
+                        await WaitForBundleToLoad();
+                        return;
+                    }
+
                     await LoadReplacementShaderFromBundleAsync(shader, manifest); // Needs main thread
                     InvalidShader = shader.Shader;
                     break;
@@ -133,6 +168,15 @@ namespace AssetBundleLoadingTools.Core
 
             Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
             Loaded = true;
+        }
+
+        public async Task WaitForBundleToLoad()
+        {
+            while (!Loaded)
+            {
+                await Task.Delay(10);
+            }
+            return;
         }
 
         public (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
@@ -163,6 +207,39 @@ namespace AssetBundleLoadingTools.Core
             if(closestMatch != null && closestManifest != null)
             {
                 LoadReplacementShaderFromBundle(closestMatch.ShaderInfo, closestManifest);
+            }
+            return (closestMatch?.ShaderInfo, closestMatch);
+        }
+
+        // TODO: Optimize on non-debug mode
+        public async Task<(CompiledShaderInfo?, ShaderMatchInfo?)> GetReplacementShaderAsync(CompiledShaderInfo shaderInfo)
+        {
+            ShaderMatchInfo? closestMatch = null;
+            ShaderBundleManifest? closestManifest = null;
+
+            foreach (var manifest in _manifests)
+            {
+                foreach (var shader in manifest.ShadersByBundlePath.Values)
+                {
+                    var match = ShaderMatching.ShaderInfosMatch(shaderInfo, shader);
+                    if (match == null) continue;
+                    if (match.ShaderMatchType == ShaderMatchType.FullMatch)
+                    {
+                        await LoadReplacementShaderFromBundleAsync(shader, manifest);
+                        return (shader, match);
+                    }
+
+                    if (closestMatch == null || match.PartialMatchScore < closestMatch.PartialMatchScore)
+                    {
+                        closestMatch = match;
+                        closestManifest = manifest;
+                    }
+                }
+            }
+
+            if (closestMatch != null && closestManifest != null)
+            {
+                await LoadReplacementShaderFromBundleAsync(closestMatch.ShaderInfo, closestManifest);
             }
             return (closestMatch?.ShaderInfo, closestMatch);
         }

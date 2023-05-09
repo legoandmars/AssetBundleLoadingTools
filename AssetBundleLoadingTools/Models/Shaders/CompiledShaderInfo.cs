@@ -44,11 +44,12 @@ namespace AssetBundleLoadingTools.Models.Shaders
             Shader = null!;
         }
 
-        public CompiledShaderInfo(Shader shader, List<string> variants)
+        // WARNING: If you call this constructor on anything but the main thread, it will crash
+        public CompiledShaderInfo(Shader shader, List<string> keywords)
         {
             Shader = shader;
             Name = shader.name;
-            VariantInfo = new ShaderVariantInfo(variants);
+            VariantInfo = new ShaderVariantInfo(keywords);
             Properties = ShaderMatching.GetShaderProperties(shader);
 
             // TODO: implement cache somewhere here(?)

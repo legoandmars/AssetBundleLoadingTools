@@ -47,7 +47,7 @@ namespace AssetBundleLoadingTools
             }
 
             var loader = new ShaderBundleLoader();
-            loader.LoadAllBundles();
+            loader.LoadAllBundlesIfNeeded();
         }
 
 

@@ -14,20 +14,14 @@ namespace AssetBundleLoadingTools.Core
     public class ShaderDebugger
     {
         private static string _debuggingFilePath = Path.Combine(Constants.DebuggingPath, DateTime.Now.ToFileTimeUtc()+".shaderdebug");
-        private static ConcurrentDictionary<string, List<ShaderDebugInfo>> _shaderDebugInfos = new();
+        private static List<ShaderDebugInfo> _shaderDebugInfos = new();
         private static bool _debuggerAwaitingWrite = false;
 
-        public static void AddInfoToDebugging(string hash, ShaderDebugInfo shaderDebugInfo)
+        public static void AddInfoToDebugging(ShaderDebugInfo shaderDebugInfo)
         {
-            if(_shaderDebugInfos.TryGetValue(hash, out List<ShaderDebugInfo> debugInfos))
-            {
-                debugInfos.Add(shaderDebugInfo);
-            }
-            else
-            {
-                _shaderDebugInfos.TryAdd(hash, new List<ShaderDebugInfo>() { shaderDebugInfo });
-            }
+            if (_shaderDebugInfos.Contains(shaderDebugInfo)) return;
 
+            _shaderDebugInfos.Add(shaderDebugInfo);
             _debuggerAwaitingWrite = true;
         }
 
