@@ -38,10 +38,6 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <Reference Include="AssetsTools.NET, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(BeatSaberDir)\Libs\AssetsTools.NET.dll</HintPath>
-    </Reference>
     <Reference Include="0Harmony">
       <HintPath>$(BeatSaberDir)\Libs\0Harmony.dll</HintPath>
       <Private>False</Private>
@@ -115,15 +111,9 @@
   </ItemGroup>
 	
   <ItemGroup>
-	<None Include="AssetBundleLoadingTools.csproj.user"
-			Condition="Exists('AssetBundleLoadingTools.csproj.user')"
-			Visible="false" />
-	<None Include="Directory.Build.props"
-			Condition="Exists('Directory.Build.props')"
-			Visible="false" />
-	<None Include="Directory.Build.targets"
-			Condition="Exists('Directory.Build.targets')"
-			Visible="false" />
+	<None Include="AssetBundleLoadingTools.csproj.user" Condition="Exists('AssetBundleLoadingTools.csproj.user')" Visible="false" />
+	<None Include="Directory.Build.props" Condition="Exists('Directory.Build.props')" Visible="false" />
+	<None Include="Directory.Build.targets" Condition="Exists('Directory.Build.targets')" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
