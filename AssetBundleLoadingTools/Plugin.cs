@@ -36,11 +36,6 @@ namespace AssetBundleLoadingTools
             Log = logger;
             Config = config.Generated<PluginConfig>();
 
-            if (Config.EnableCache)
-            {
-                _configWriteTimer = new Timer(Caching.WriteCache, null, 30000, 30000);
-                Caching.ReadCache();
-            }
             if (Config.EnableShaderDebugging)
             {
                 _configWriteTimer = new Timer(ShaderDebugger.SerializeDebuggingInfo, null, 30000, 30000);
