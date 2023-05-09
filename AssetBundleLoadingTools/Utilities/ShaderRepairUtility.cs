@@ -52,6 +52,38 @@ namespace AssetBundleLoadingTools.Utilities
             return await ReplaceShadersAsync(materials, shaderInfos);
         }
 
+        public static bool FixShaderOnMaterial(Material material) => FixShadersOnMaterials(new List<Material>() { material });
+        public static bool FixShadersOnMaterials(List<Material> materials)
+        {
+            if (!UnityGame.OnMainThread)
+            {
+                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
+            }
+
+            ShaderBundleLoader.Instance.LoadAllBundlesIfNeeded();
+
+            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
+            var shaderInfos = GetShaderInfosFromMaterials(materials);
+
+            return ReplaceShaders(materials, shaderInfos);
+        }
+
+        public static async Task<bool> FixShaderOnMaterialAsync(Material material) => await FixShadersOnMaterialsAsync(new List<Material>() { material });
+        public static async Task<bool> FixShadersOnMaterialsAsync(List<Material> materials)
+        {
+            if (!UnityGame.OnMainThread)
+            {
+                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
+            }
+
+            await ShaderBundleLoader.Instance.LoadAllBundlesIfNeededAsync();
+
+            // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
+            var shaderInfos = GetShaderInfosFromMaterials(materials);
+
+            return await ReplaceShadersAsync(materials, shaderInfos);
+        }
+
         private static async Task<bool> ReplaceShadersAsync(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
         {
             foreach (var shaderInfo in shaderInfos)
@@ -154,160 +186,6 @@ namespace AssetBundleLoadingTools.Utilities
             return new List<string> { Constants.SinglePassKeyword };
         }
 
-        // Ideally "new" fixed shaders will be distributed in easy to open AssetBundles that you can just load if necessary
-        // I've been doing this internally for testing with the following structure:
-        // Prefab Assets/_Shaders.prefab
-        //    - GameObject ShaderParent
-        //       - List<GameObject> ShaderObject
-        // 
-        // To load these shader assetbundles, I'm just using gameObject.GetComponentsInChildren<Renderer>()
-        // definitely not ideal!
-        // It would almost certainly be better to have a format that's just directly adding a bunch of different shaders to the assetbundle when building in editor
-        // Then you can just do AssetBundle.LoadAllAssets<Shader>() and you're off to the races
-        // I'm curious if you would run into problems with the "add a bunch of assets to the assetbundle individually" method after you started getting into the hundreds of shaders in a single file, though...
-
-        private static AssetsManager _assetsManager = new();
-
-        // really needs to be expanded into multiple methods
-        internal static bool FixLegacyShaders(GameObject gameObject, string assetBundlePath, string hash)
-        {
-            if (gameObject == null) return false;
-
-            Dictionary<string, List<string>>? keywords = null;
-            // var keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
-            bool fixable = true;
-
-            List<Material> sharedMaterials = new();
-            List<Shader> shaders = new();
-            List<CompiledShaderInfo> shaderInfos = new();
-
-            // TODO: Is there anything that uses shaders that isn't a renderer?
-            foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
-            {
-                if (renderer == null) continue;
-                foreach (var material in renderer.sharedMaterials)
-                {
-                    if (material == null || material.shader == null) continue;
-
-                    if (!sharedMaterials.Contains(material)) sharedMaterials.Add(material);
-                    if (!shaders.Contains(material.shader)) shaders.Add(material.shader);
-                }
-            }
-
-            // setup cache
-            // TODO: own method
-            BundleShaderData? shaderCache = null;
-
-            if (Plugin.Config.EnableCache)
-            {
-                shaderCache = Caching.GetCachedBundleShaderData(hash);
-                if(shaderCache == null)
-                {
-                    shaderCache = new BundleShaderData(new List<CompiledShaderInfo>(), true);
-                }
-            }
-
-            bool cacheEnabled = shaderCache != null && Plugin.Config.EnableCache;
-
-            if (cacheEnabled && !shaderCache!.NeedsReplacing)
-            {
-                return true;
-            }
-
-            foreach (var shader in shaders)
-            {
-                // convert to infos; first check cache
-                bool foundCachedShader = false;
-
-                if (cacheEnabled)
-                {
-                    foreach (var cachedShader in shaderCache!.CompiledShaderInfos)
-                    {
-                        if(cachedShader == null) continue;
-                        if(ShaderMatching.ShaderInfoIsForShader(cachedShader, shader))
-                        {
-                            // match found, no need to get properties and keywords
-                            // create new object to avoid modifying cached objects
-                            var newShaderInfo = new CompiledShaderInfo(cachedShader.Name, cachedShader.Properties, cachedShader.VariantInfo);
-                            newShaderInfo.Shader = shader;
-
-                            shaderInfos.Add(newShaderInfo);
-
-                            foundCachedShader = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!foundCachedShader)
-                {
-                    if (keywords == null)
-                    {
-                        // load keywords for model... this is some SLOW SHIT right now!
-                        keywords = LoadShaderKeywordsFromBundle(assetBundlePath);
-                    }
-
-                    if (keywords.TryGetValue(shader.name, out var shaderKeywords))
-                    {
-                        var shaderInfo = new CompiledShaderInfo(shader, shaderKeywords);
-                        shaderInfos.Add(shaderInfo);
-
-                        if (cacheEnabled)
-                        {
-                            // cache shader
-                            shaderCache!.CompiledShaderInfos.Add(shaderInfo);
-                        }
-                    }
-                }
-            }
-
-            if (cacheEnabled)
-            {
-                shaderCache!.NeedsReplacing = shaderCache.CompiledShaderInfos.Any(x => !x.IsSupported);
-                Caching.AddShaderDataToCache(hash, shaderCache);
-            }
-
-            foreach (var shaderInfo in shaderInfos)
-            {
-                // shader replacement pass
-                if (!shaderInfo.IsSupported)
-                {
-                    Debug.Log("HUH");
-                    // Debug.Log("NOT SUPPORTED! REPLACE!");
-                    // try to get replacement
-                    var (replacement, replacementMatchInfo) = ShaderBundleLoader.GetReplacementShader(shaderInfo);
-                    if (replacement == null) 
-                    {
-                        foreach (var material in sharedMaterials)
-                        {
-                            if (material.shader == shaderInfo.Shader)
-                            {
-                                material.shader = ShaderBundleLoader.InvalidShader;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (var material in sharedMaterials)
-                        {
-                            if (material.shader == shaderInfo.Shader)
-                            {
-                                Debug.Log($"Successfully replaced {shaderInfo.Name} with {replacement.Name}");
-                                material.shader = replacement.Shader;
-                            }
-                        }
-                    }
-
-                    if (Plugin.Config.EnableShaderDebugging)
-                    {
-                        ShaderDebugger.AddInfoToDebugging(hash, new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
-                    }
-                    // material.shader = shader;
-                }
-            }
-
-            return fixable;
-        }
 
         // i am so tired i'm just copy-pasting rn
         // eventually this will not be copy-pasted and will use shared methods

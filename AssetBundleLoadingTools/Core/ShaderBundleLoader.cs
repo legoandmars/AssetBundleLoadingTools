@@ -19,12 +19,12 @@ namespace AssetBundleLoadingTools.Core
         public static ShaderBundleLoader Instance { get; private set; }
 
         public Shader? InvalidShader = null;
-        public bool Loaded = false;
-        public bool LoadingStarted = false;
 
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
         private List<ShaderBundleManifest> _manifests = new();
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private bool _loaded = false;
+        private bool _loadingStarted = false;
 
         public ShaderBundleLoader() 
         {
@@ -42,16 +42,16 @@ namespace AssetBundleLoadingTools.Core
         // This ideally should not ever be called! but we need a 
         public void LoadAllBundlesIfNeeded()
         {
-            if (Loaded) return;
+            if (_loaded) return;
 
-            if (LoadingStarted)
+            if (_loadingStarted)
             {
                 // async is already running; cancel
 
                 _cancellationTokenSource.Cancel();
             }
 
-            LoadingStarted = true;
+            _loadingStarted = true;
 
             List<string> files = new();
             foreach (var fileExtension in _fileExtensions)
@@ -95,25 +95,25 @@ namespace AssetBundleLoadingTools.Core
             }
 
             Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
-            Loaded = true;
+            _loaded = true;
         }
 
         public async Task LoadAllBundlesIfNeededAsync(CancellationToken? cancellationToken = null)
         {
-            if (Loaded) return;
+            if (_loaded) return;
 
             if (cancellationToken == null)
             {
                 cancellationToken = _cancellationTokenSource.Token;
             }
 
-            if (LoadingStarted || cancellationToken.Value.IsCancellationRequested)
+            if (_loadingStarted || cancellationToken.Value.IsCancellationRequested)
             {
                 await WaitForBundleToLoad();
                 return;
             }
 
-            LoadingStarted = true;
+            _loadingStarted = true;
 
             List<string> files = new();
             foreach(var fileExtension in _fileExtensions)
@@ -167,12 +167,12 @@ namespace AssetBundleLoadingTools.Core
             }
 
             Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
-            Loaded = true;
+            _loaded = true;
         }
 
         public async Task WaitForBundleToLoad()
         {
-            while (!Loaded)
+            while (!_loaded)
             {
                 await Task.Delay(10);
             }
