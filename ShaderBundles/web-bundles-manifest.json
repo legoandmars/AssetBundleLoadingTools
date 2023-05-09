@@ -1,5 +1,9 @@
 {
     "ShaderBundles" : [
-        "test.shaderbundle"
+        "test.shaderbundle",
+        "builtin.shaderbundle",
+        "bobbie-project.shaderbundle",
+        "main.shaderbundle",
+        "invalid.shaderbundle"
     ]
 }
