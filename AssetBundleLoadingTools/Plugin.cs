@@ -26,7 +26,6 @@ namespace AssetBundleLoadingTools
         internal static IPALogger Log { get; private set; } = null!;
 
         internal static PluginConfig Config { get; private set; } = null!;
-        private static Timer? _configWriteTimer { get; set; }
         private static Timer? _debuggerWriteTimer { get; set; }
 
         [Init]
@@ -38,11 +37,8 @@ namespace AssetBundleLoadingTools
 
             if (Config.EnableShaderDebugging)
             {
-                _configWriteTimer = new Timer(ShaderDebugger.SerializeDebuggingInfo, null, 30000, 30000);
+                _debuggerWriteTimer = new Timer(ShaderDebugger.SerializeDebuggingInfo, null, 30000, 30000);
             }
-
-            var loader = new ShaderBundleLoader();
-            loader.LoadAllBundlesIfNeeded();
         }
 
 
@@ -55,7 +51,6 @@ namespace AssetBundleLoadingTools
         [OnExit]
         public void OnApplicationQuit()
         {
-            _configWriteTimer?.Dispose();
             _debuggerWriteTimer?.Dispose();
             harmony.UnpatchSelf();
         }

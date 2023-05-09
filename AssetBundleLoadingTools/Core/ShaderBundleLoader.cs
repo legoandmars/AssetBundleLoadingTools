@@ -16,7 +16,7 @@ namespace AssetBundleLoadingTools.Core
 {
     public class ShaderBundleLoader
     {
-        public static ShaderBundleLoader Instance { get; private set; } = null!;
+        public static ShaderBundleLoader Instance { get; private set; } = new();
 
         public Shader? InvalidShader = null;
 
@@ -32,23 +32,25 @@ namespace AssetBundleLoadingTools.Core
             {
                 Directory.CreateDirectory(Constants.ShaderBundlePath);
             }
-
-            if (Instance == null)
-            {
-                Instance = this;
-            }
         }
 
         // This ideally should not ever be called! but we need a 
         public void LoadAllBundlesIfNeeded()
         {
             if (_loaded) return;
+            Plugin.Log.Info("Loading shaderbundles...");
 
             if (_loadingStarted)
             {
                 // async is already running; cancel
 
                 _cancellationTokenSource.Cancel();
+
+                foreach (var existingManifest in _manifests)
+                {
+                    existingManifest.AssetBundle?.Unload(true);
+                }
+                _manifests.Clear();
             }
 
             _loadingStarted = true;
@@ -101,6 +103,7 @@ namespace AssetBundleLoadingTools.Core
         public async Task LoadAllBundlesIfNeededAsync(CancellationToken? cancellationToken = null)
         {
             if (_loaded) return;
+            Plugin.Log.Info("Loading shaderbundles (async)...");
 
             if (cancellationToken == null)
             {
