@@ -84,7 +84,7 @@ namespace AssetBundleLoadingTools.Utilities
                     }
                 }
 
-                if (Plugin.Config.EnableShaderDebugging)
+                if (Plugin.Config.ShaderDebugging)
                 {
                     ShaderDebugger.AddInfoToDebugging(new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
                 }
@@ -115,7 +115,7 @@ namespace AssetBundleLoadingTools.Utilities
                     }
                 }
 
-                if (Plugin.Config.EnableShaderDebugging)
+                if (Plugin.Config.ShaderDebugging)
                 {
                     ShaderDebugger.AddInfoToDebugging(new ShaderDebugInfo(shaderInfo, replacementMatchInfo));
                 }

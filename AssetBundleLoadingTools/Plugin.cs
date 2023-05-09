@@ -32,7 +32,7 @@ namespace AssetBundleLoadingTools
             Log = logger;
             Config = config.Generated<PluginConfig>();
 
-            if (Config.EnableShaderDebugging)
+            if (Config.ShaderDebugging)
             {
                 _debuggerWriteTimer = new Timer(ShaderDebugger.SerializeDebuggingInfo, null, 30000, 30000);
             }
