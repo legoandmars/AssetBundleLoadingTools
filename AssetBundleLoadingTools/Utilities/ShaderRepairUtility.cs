@@ -14,11 +14,21 @@ using System.IO;
 using Caching = AssetBundleLoadingTools.Core.Caching;
 using AssetBundleLoadingTools.Models.Bundles;
 using System.Security.Policy;
+using IPA.Utilities;
 
 namespace AssetBundleLoadingTools.Utilities
 {
     public static class ShaderRepairUtility
     {
+        public static async Task<bool> FixShadersOnGameObject(GameObject gameObject)
+        {
+            if (!UnityGame.OnMainThread)
+            {
+                throw new InvalidOperationException("ShaderRepair methods must be called from the main thread.");
+            }
+
+            return true;
+        }
         // Ideally "new" fixed shaders will be distributed in easy to open AssetBundles that you can just load if necessary
         // I've been doing this internally for testing with the following structure:
         // Prefab Assets/_Shaders.prefab

@@ -15,22 +15,34 @@ namespace AssetBundleLoadingTools.Core
 {
     public class ShaderBundleLoader
     {
-        public static Shader? InvalidShader = null;
+        public static ShaderBundleLoader Instance { get; private set; }
+
+        public Shader? InvalidShader = null;
+        public bool Loaded = false;
+        public bool LoadingStarted = false;
+
         private readonly List<string> _fileExtensions = new List<string>() { "*.shaderbundle", "*.shaderbundl" };
 
-        // TODO: unstatic :(
-        private static List<ShaderBundleManifest> manifests = new();
+        private List<ShaderBundleManifest> _manifests = new();
+
         public ShaderBundleLoader() 
         {
             if (!Directory.Exists(Constants.ShaderBundlePath))
             {
                 Directory.CreateDirectory(Constants.ShaderBundlePath);
             }
+
+            if(Instance == null)
+            {
+                Instance = this;
+            }
         }
 
         // This ideally should not ever be called! but we need a 
         public void LoadAllBundles()
         {
+            LoadingStarted = true;
+
             List<string> files = new();
             foreach (var fileExtension in _fileExtensions)
             {
@@ -55,13 +67,10 @@ namespace AssetBundleLoadingTools.Core
                 manifest.Path = file;
                 manifest.AssetBundle = bundle;
 
-                manifests.Add(manifest);
+                _manifests.Add(manifest);
             }
 
-            Debug.Log("LOADED ALL BUNDLES");
-            Debug.Log(manifests.Count);
-
-            foreach (var manifest in manifests)
+            foreach (var manifest in _manifests)
             {
                 foreach (var shader in manifest.ShadersByBundlePath.Values)
                 {
@@ -74,10 +83,15 @@ namespace AssetBundleLoadingTools.Core
 
                 if (InvalidShader != null) break;
             }
+
+            Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
+            Loaded = true;
         }
 
         public async Task LoadAllBundlesAsync()
         {
+            LoadingStarted = true;
+
             List<string> files = new();
             foreach(var fileExtension in _fileExtensions)
             {
@@ -100,13 +114,10 @@ namespace AssetBundleLoadingTools.Core
                 manifest.Path = file;
                 manifest.AssetBundle = bundle;
 
-                manifests.Add(manifest);
+                _manifests.Add(manifest);
             }
 
-            Debug.Log("LOADED ALL BUNDLES");
-            Debug.Log(manifests.Count);
-
-            foreach(var manifest in manifests)
+            foreach(var manifest in _manifests)
             {
                 foreach(var shader in manifest.ShadersByBundlePath.Values)
                 {
@@ -120,74 +131,16 @@ namespace AssetBundleLoadingTools.Core
                 if (InvalidShader != null) break;
             }
 
-            return;
+            Plugin.Log.Info($"Loaded {_manifests.Count} manifests containing {_manifests.SelectMany(x => x.ShadersByBundlePath).ToList().Count} shaders.");
+            Loaded = true;
         }
 
-        private List<string> DownloadBundlesFromWeb(List<string> existingFiles, string directory)
-        {
-            List<string> bundlePaths = new();
-            // No async HttpClient
-            var webBundlesTask = Task.Run(() => ShaderBundleWebService.GetShaderBundles());
-            webBundlesTask.Wait();
-            var webBundles = webBundlesTask.Result;
-            Debug.Log(string.Join(", ", webBundles));
-
-            if (webBundles == null) return bundlePaths;
-            foreach(var webBundle in webBundles)
-            {
-                var bundlePath = Path.Combine(directory, webBundle);
-                if (File.Exists(bundlePath)) continue;
-
-                var bundleBytesTask = Task.Run(() => ShaderBundleWebService.GetShaderBundleBytesFromURL(webBundle));
-                bundleBytesTask.Wait();
-                var bundleBytes = bundleBytesTask.Result;
-
-                File.WriteAllBytes(bundlePath, bundleBytes);
-                bundlePaths.Add(bundlePath);
-            }
-
-            return bundlePaths;
-        }
-
-        private async Task<List<string>> LoadBundlesFromWeb(List<string> existingFiles)
-        {
-            var webBundles = await ShaderBundleWebService.GetShaderBundles();
-            if(webBundles != null)
-            {
-                Debug.Log(string.Join(", ", webBundles));
-            }
-            return webBundles;
-        }
-
-        private void LoadBundle(string path)
-        {
-            var manifest = ManifestFromZipFile(path);
-            if (manifest == null) return;
-            manifest.Path = path;
-
-            // TODO: Once there's an async API available, it should be relatively straightforward to wait to load these until the first request
-            // Really shouldn't need to load these right away *at all*
-            var bundleStream = AssetBundleStreamFromZipFile(path);
-            if(bundleStream == null) return;
-            var bundle = AssetBundle.LoadFromMemory(bundleStream.ToArray());
-            manifest.AssetBundle = bundle;
-
-            //Debug.Log("why>?")
-            if(bundle == null)
-            {
-                Debug.Log("MANIFEST NULL???");
-            }
-            manifests.Add(manifest);
-
-            return;
-        }
-
-        public static (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
+        public (CompiledShaderInfo?, ShaderMatchInfo?) GetReplacementShader(CompiledShaderInfo shaderInfo)
         {
             ShaderMatchInfo? closestMatch = null;
             ShaderBundleManifest? closestManifest = null;
 
-            foreach(var manifest in manifests)
+            foreach(var manifest in _manifests)
             {
                 foreach(var shader in manifest.ShadersByBundlePath.Values)
                 {
@@ -207,11 +160,6 @@ namespace AssetBundleLoadingTools.Core
                 }
             }
             
-            /*if(closestMatch != null && closestMatch.ShaderMatchType == ShaderMatchType.PartialMatch)
-            {
-                LogPartialShaderInfo(closestMatch);
-            }*/
-
             if(closestMatch != null && closestManifest != null)
             {
                 LoadReplacementShaderFromBundle(closestMatch.ShaderInfo, closestManifest);
@@ -219,15 +167,7 @@ namespace AssetBundleLoadingTools.Core
             return (closestMatch?.ShaderInfo, closestMatch);
         }
 
-        // for debugging
-        public static void LogPartialShaderInfo(ShaderMatchInfo matchInfo)
-        {
-            Plugin.Log.Info($"Failed to find full replacement for {matchInfo.ShaderInfo.Name}; only partial match found");
-            Plugin.Log.Info(JsonConvert.SerializeObject(matchInfo));
-        }
-
-        // TODO: Async
-        private static void LoadReplacementShaderFromBundle(CompiledShaderInfo shaderInfo, ShaderBundleManifest manifest)
+        private void LoadReplacementShaderFromBundle(CompiledShaderInfo shaderInfo, ShaderBundleManifest manifest)
         {
             if (shaderInfo.Shader != null) return;
             if (manifest.AssetBundle == null) 
@@ -242,7 +182,7 @@ namespace AssetBundleLoadingTools.Core
             }
         }
 
-        private async static Task LoadReplacementShaderFromBundleAsync(CompiledShaderInfo shaderInfo, ShaderBundleManifest manifest)
+        private async Task LoadReplacementShaderFromBundleAsync(CompiledShaderInfo shaderInfo, ShaderBundleManifest manifest)
         {
             if (shaderInfo.Shader != null) return;
             if (manifest.AssetBundle == null)
@@ -277,13 +217,6 @@ namespace AssetBundleLoadingTools.Core
             return manifest;
         }
 
-        /*private async Task<AssetBundle?> AssetBundleFromZipFileAsync(string path)
-        {
-            var stream = await AssetBundleStreamFromZipFileAsync(path);
-            if (stream == null) return null;
-            return await LoadAssetBundleFromStreamAsync(stream);
-        }*/
-
         private MemoryStream? AssetBundleStreamFromZipFile(string path)
         {
             using ZipArchive archive = ZipFile.OpenRead(path);
@@ -312,7 +245,7 @@ namespace AssetBundleLoadingTools.Core
             return await completion.Task;
         }
 
-        private async static Task<Shader?> LoadShaderFromPathAsync(AssetBundle bundle, string assetName)
+        private async Task<Shader?> LoadShaderFromPathAsync(AssetBundle bundle, string assetName)
         {
             var completion = new TaskCompletionSource<Shader?>();
             var assetLoadRequest = bundle.LoadAssetAsync<Shader>(assetName);
