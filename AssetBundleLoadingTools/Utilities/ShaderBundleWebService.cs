@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -55,6 +56,33 @@ namespace AssetBundleLoadingTools.Utilities
                 Plugin.Log.Info("Message : " + e.Message);
                 return null;
             }
+        }
+
+        public static async Task<List<string>> DownloadAllShaderBundles(string directory, List<string> downloadedBundlePaths)
+        {
+            List<string> bundlePaths = new();
+            var webBundles = await GetShaderBundles();
+
+            if (webBundles == null) return bundlePaths;
+            foreach (var webBundle in webBundles)
+            {
+                var bundlePath = Path.Combine(directory, webBundle);
+                if (downloadedBundlePaths.Any(x => Path.GetFileName(x) == webBundle) || File.Exists(bundlePath)) continue;
+
+                var bytes = await GetShaderBundleBytesFromURL(webBundle);
+
+                if (bytes == null) continue;
+                File.WriteAllBytes(bundlePath, bytes);
+                bundlePaths.Add(bundlePath);
+            }
+
+            if(bundlePaths.Count > 0)
+            {
+                Plugin.Log.Info("Downloaded new .shaderbundles:");
+                Plugin.Log.Info(string.Join(", ", bundlePaths));
+            }
+
+            return bundlePaths;
         }
     }
 }
