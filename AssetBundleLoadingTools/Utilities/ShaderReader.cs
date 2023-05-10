@@ -76,9 +76,14 @@ namespace AssetBundleLoadingTools.Utilities
         {
             var result = new List<IntPtr>();
             
-            IntPtr intShaderPtr = *(IntPtr*)(shaderPtr + 80);
+            Log($"Parsing shader ptr {shaderPtr.ToString("x")}");
+            
+            IntPtr intShaderPtr = *(IntPtr*)(shaderPtr + 56);
+            Log($"intShaderPtr: {intShaderPtr.ToString("x")}");
             IntPtr* subShaderListPtr = *(IntPtr**)intShaderPtr;
-            int numSubShaders = *(int*)(intShaderPtr + 24);
+            Log($"subShaderListPtr: {(IntPtr)subShaderListPtr:x}");
+            int numSubShaders = *(int*)(intShaderPtr + 16);
+            Log("Subshaders: " + numSubShaders);
 
             for (int subShaderIdx = 0; subShaderIdx < numSubShaders; subShaderIdx++)
             {
@@ -92,7 +97,7 @@ namespace AssetBundleLoadingTools.Utilities
                 }
 
                 IntPtr* passListPtr = *(IntPtr**)(subShaderPtr + 112);
-                int numPasses = *(int*)(subShaderPtr + 136);
+                int numPasses = *(int*)(subShaderPtr + 128);
                 Log("Passes: " + numPasses);
 
                 for (int passIdx = 0; passIdx < numPasses; passIdx++)
@@ -106,8 +111,8 @@ namespace AssetBundleLoadingTools.Utilities
                         continue;
                     }
                     
-                    IntPtr* subProgListPtr = *(IntPtr**)(progPtr + 16);
-                    int numSubProgs = *(int*)(progPtr + 40);
+                    IntPtr* subProgListPtr = *(IntPtr**)(progPtr + 8);
+                    int numSubProgs = *(int*)(progPtr + 24);
                     Log("Subprogs: " + numSubProgs);
 
                     for (int subProgIdx = 0; subProgIdx < numSubProgs; subProgIdx++)
