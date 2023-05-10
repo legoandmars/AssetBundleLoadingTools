@@ -11,7 +11,7 @@ namespace AssetBundleLoadingTools.Utilities
 {
     public static class ShaderRepair
     {
-        public static bool FixShadersOnGameObject(GameObject gameObject)
+        public static ShaderReplacementInfo FixShadersOnGameObject(GameObject gameObject)
         {
             MainThreadCheck();
 
@@ -21,7 +21,7 @@ namespace AssetBundleLoadingTools.Utilities
             return ReplaceShaders(materials, shaderInfos);
         }
 
-        public static async Task<bool> FixShadersOnGameObjectAsync(GameObject gameObject)
+        public static async Task<ShaderReplacementInfo> FixShadersOnGameObjectAsync(GameObject gameObject)
         {
             MainThreadCheck();
             await ShaderBundleLoader.Instance.WaitForWebBundles(); // wait to catch up on "new" online bundles 
@@ -33,8 +33,8 @@ namespace AssetBundleLoadingTools.Utilities
             return await ReplaceShadersAsync(materials, shaderInfos);
         }
 
-        public static bool FixShaderOnMaterial(Material material) => FixShadersOnMaterials(new List<Material>() { material });
-        public static bool FixShadersOnMaterials(List<Material> materials)
+        public static ShaderReplacementInfo FixShaderOnMaterial(Material material) => FixShadersOnMaterials(new List<Material>() { material });
+        public static ShaderReplacementInfo FixShadersOnMaterials(List<Material> materials)
         {
             MainThreadCheck();
 
@@ -43,8 +43,8 @@ namespace AssetBundleLoadingTools.Utilities
             return ReplaceShaders(materials, shaderInfos);
         }
 
-        public static async Task<bool> FixShaderOnMaterialAsync(Material material) => await FixShadersOnMaterialsAsync(new List<Material>() { material });
-        public static async Task<bool> FixShadersOnMaterialsAsync(List<Material> materials)
+        public static async Task<ShaderReplacementInfo> FixShaderOnMaterialAsync(Material material) => await FixShadersOnMaterialsAsync(new List<Material>() { material });
+        public static async Task<ShaderReplacementInfo> FixShadersOnMaterialsAsync(List<Material> materials)
         {
             MainThreadCheck();
             await ShaderBundleLoader.Instance.WaitForWebBundles(); // wait to catch up on "new" online bundles 
@@ -62,13 +62,26 @@ namespace AssetBundleLoadingTools.Utilities
             }
         }
 
-        private static async Task<bool> ReplaceShadersAsync(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
+        private static async Task<ShaderReplacementInfo> ReplaceShadersAsync(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
         {
+            if (shaderInfos.All(x => x.IsSupported))
+            {
+                // TODO: explicit override for "force compiled" stuff
+                // TODO: explicit override for BS uber only/standard only/etc
+                return new ShaderReplacementInfo(true);
+            }
+
+            // if any shaders invalid entire model needs to be converted
+            List<string> missingShaderNames = new();
             foreach (var shaderInfo in shaderInfos)
             {
-                if (shaderInfo.IsSupported) continue;
-
+                // TODO: Smarter handling of "partial replacement" here
                 var (replacement, replacementMatchInfo) = await ShaderBundleLoader.Instance.GetReplacementShaderAsync(shaderInfo); // main async difference is how assetbundle.load is called
+
+                if (replacement == null)
+                {
+                    missingShaderNames.Add(shaderInfo.Name); 
+                }
 
                 foreach (var material in materials)
                 {
@@ -90,17 +103,31 @@ namespace AssetBundleLoadingTools.Utilities
                 }
             }
 
-            return true;
+            return new ShaderReplacementInfo(missingShaderNames.Count == 0, missingShaderNames);
         }
 
-        private static bool ReplaceShaders(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
+        private static ShaderReplacementInfo ReplaceShaders(List<Material> materials, List<CompiledShaderInfo> shaderInfos)
         {
+            if (shaderInfos.All(x => x.IsSupported))
+            {
+                // TODO: explicit override for "force compiled" stuff
+                // TODO: explicit override for BS uber only/standard only/etc
+                return new ShaderReplacementInfo(true);
+            }
+
+            // if any shaders invalid entire model needs to be converted
+            List<string> missingShaderNames = new();
             foreach (var shaderInfo in shaderInfos)
             {
                 if (shaderInfo.IsSupported) continue;
 
                 var (replacement, replacementMatchInfo) = ShaderBundleLoader.Instance.GetReplacementShader(shaderInfo); // main async difference is how assetbundle.load is called
 
+                if (replacement == null)
+                {
+                    missingShaderNames.Add(shaderInfo.Name);
+                }
+
                 foreach (var material in materials)
                 {
                     if (material.shader != shaderInfo.Shader) continue;
@@ -121,7 +148,7 @@ namespace AssetBundleLoadingTools.Utilities
                 }
             }
 
-            return true;
+            return new ShaderReplacementInfo(missingShaderNames.Count == 0, missingShaderNames);
         }
 
         private static List<CompiledShaderInfo> GetShaderInfosFromMaterials(List<Material> materials) 
