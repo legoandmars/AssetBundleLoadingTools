@@ -16,6 +16,9 @@ namespace AssetBundleLoadingTools.Models.Shaders
         public List<ShaderProperty> Properties { get; set; }
 
         public ShaderVariantInfo VariantInfo { get; set; }
+        
+        [JsonIgnore]
+        public bool IsSinglePassInstancedSupported { get; private set; }
 
         // **Technically** this can be set to check whatever
         // For now, we're just going to hardcode the variant check for Beat Saber
@@ -25,7 +28,8 @@ namespace AssetBundleLoadingTools.Models.Shaders
         { 
             get 
             {
-                return VariantInfo.IsSinglePassInstanced;
+                return VariantInfo.IsSinglePassInstanced ||
+                       IsSinglePassInstancedSupported;
             } 
         }
 
@@ -47,6 +51,7 @@ namespace AssetBundleLoadingTools.Models.Shaders
             Name = shader.name;
             VariantInfo = new ShaderVariantInfo(keywords);
             Properties = ShaderMatching.GetShaderProperties(shader);
+            IsSinglePassInstancedSupported = ShaderReader.IsSinglePassInstancedSupported(shader);
 
             // TODO: implement cache somewhere here(?)
         }
