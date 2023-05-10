@@ -15,7 +15,7 @@ namespace AssetBundleLoadingTools.Utilities
         {
             MainThreadCheck();
 
-            var materials = GetMaterialsFromGameObject(gameObject);
+            var materials = GetMaterialsFromGameObjectRenderers(gameObject);
             var shaderInfos = GetShaderInfosFromMaterials(materials);
 
             return ReplaceShaders(materials, shaderInfos);
@@ -27,7 +27,7 @@ namespace AssetBundleLoadingTools.Utilities
             await ShaderBundleLoader.Instance.WaitForWebBundles(); // wait to catch up on "new" online bundles 
 
             // a bit expensive due to the GetComponentsInChildren call, but can't be awaited
-            var materials = GetMaterialsFromGameObject(gameObject);
+            var materials = GetMaterialsFromGameObjectRenderers(gameObject);
             var shaderInfos = GetShaderInfosFromMaterials(materials);
 
             return await ReplaceShadersAsync(materials, shaderInfos);
@@ -165,7 +165,7 @@ namespace AssetBundleLoadingTools.Utilities
             return shaderInfos;
         }
 
-        private static List<Material> GetMaterialsFromGameObject(GameObject gameObject)
+        public static List<Material> GetMaterialsFromGameObjectRenderers(GameObject gameObject)
         {
             List<Material> sharedMaterials = new();
 
