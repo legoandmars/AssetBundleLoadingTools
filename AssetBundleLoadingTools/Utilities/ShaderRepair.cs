@@ -153,7 +153,7 @@ namespace AssetBundleLoadingTools.Utilities
 
         private static List<CompiledShaderInfo> GetShaderInfosFromMaterials(List<Material> materials) 
         {
-            var shaders = materials.Select(x => x.shader).Distinct();
+            var shaders = materials.Where(x => x?.shader != null).Select(x => x.shader).Distinct();
             List<CompiledShaderInfo> shaderInfos = new();
 
             foreach (var shader in shaders)
