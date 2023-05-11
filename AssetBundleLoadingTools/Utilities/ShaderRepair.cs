@@ -85,7 +85,7 @@ namespace AssetBundleLoadingTools.Utilities
 
                 foreach (var material in materials)
                 {
-                    if (material.shader != shaderInfo.Shader) continue;
+                    if (material?.shader == null || material.shader != shaderInfo.Shader) continue;
 
                     if (replacement != null)
                     {

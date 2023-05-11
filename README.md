@@ -18,35 +18,65 @@ A Beat Saber library that adds utilities to alleviate various problems caused by
 ### Example Usage
 ```csharp
 using AssetBundleLoadingTools.Utilities;
+using AssetBundleLoadingTools.Models.Shaders;
 
 var assetBundle = await AssetBundleExtensions.LoadFromFileAsync(bundlePath);
 var gameObject = await AssetBundleExtensions.LoadAssetAsync<GameObject>(assetName);
-await ShaderRepair.FixShadersOnGameObjectAsync(gameObject); // Fix shaders by comparing against .shaderbundle library 
+// Fix shaders by comparing against .shaderbundle library 
+var replacementInfo = await ShaderRepair.FixShadersOnGameObjectAsync(gameObject);
 
-// Sometimes you may need to pass specific materials - like the material of a saber trail
-// Materials contained within custom types that aren't a Renderer will not be auto-detected
-foreach (var customTrail in gameObject.GetComponentsInChildren<CustomTrail>(true))
+// Handle replacement information
+if (!replacementInfo.AllShadersReplaced)
 {
-    await ShaderRepair.FixShaderOnMaterialAsync(customTrail.TrailMaterial);
+    // Not all shaders could be converted. Handle this however you feel is appropriate
+    // replacementInfo.MissingShaderNames will let you display the list of shaders that failed to load
 }
 ```
+
+### Advanced Usage
+```csharp
+using AssetBundleLoadingTools.Utilities;
+using AssetBundleLoadingTools.Models.Shaders;
+
+// Some models have custom types that aren't renderers and contain a material
+// For example, custom sabers have CustomTrails with a TrailRenderer property
+// These can't be automatically found with FixShadersOnGameObject, and it's your reponsibility to manually provide them
+
+// IMPORTANT: Always call only *one* ShaderRepair method for each gameobject.
+// If you call FixShadersOnGameObject on a saber then FixShaderOnMaterial on the saber's trails, 
+// the second call is missing important material context from the first call
+
+var assetBundle = await AssetBundleExtensions.LoadFromFileAsync(bundlePath);
+var gameObject = await AssetBundleExtensions.LoadAssetAsync<GameObject>(assetName);
+
+List<Material> materials = ShaderRepair.GetMaterialsFromGameObjectRenderers(gameObject);
+
+// Manually add CustomTrails to materials list
+foreach (var customTrail in gameObject.GetComponentsInChildren<CustomTrail>(true))
+{
+    if (!materials.Contains(customTrail.TrailMaterial))
+    {
+        materials.Add(customTrail.TrailMaterial);
+    }
+}
+
+// Fix shaders by comparing against .shaderbundle library 
+var replacementInfo = await ShaderRepair.FixShadersOnMaterialsAsync(materials);
+```
+
 ### Synchronous Usage
 ```csharp
 using AssetBundleLoadingTools.Utilities;
+using AssetBundleLoadingTools.Models.Shaders;
 
-// NOTE: Synchronous usage is highly discouraged, please use async when possible
+// NOTE: Although the library contains synchronous methods for everything, it's discouraged
+// Please use async for model loading & shader replacement whenever possible
 // Large models may involve loading a lot of shaders and can cause noticable lag spikes
 
 var assetBundle = AssetBundle.LoadFromFile(bundlePath);
 var gameObject = assetBundle.LoadAsset<GameObject>(assetName);
-ShaderRepair.FixShadersOnGameObject(gameObject); // Fix shaders by comparing against .shaderbundle library 
-
-// Sometimes you may need to pass specific materials - like the material of a saber trail
-// Materials contained within custom types that aren't a Renderer will not be auto-detected
-foreach (var customTrail in gameObject.GetComponentsInChildren<CustomTrail>(true))
-{
-    ShaderRepair.FixShaderOnMaterial(customTrail.TrailMaterial);
-}
+ // Fix shaders by comparing against .shaderbundle library
+var replacementInfo = ShaderRepair.FixShadersOnGameObject(gameObject);
 ```
 ### AssetBundleExtensions
 ```csharp
@@ -67,6 +97,10 @@ await AssetBundleExtensions.LoadAssetAsync<Material>(assetBundle, materialAssetN
 using AssetBundleLoadingTools.Utilities;
 
 // ShaderRepair contains multiple ways to fix shaders in legacy AssetBundles
+// IMPORTANT: Always call only *one* ShaderRepair method for each gameobject.
+// If you call FixShadersOnGameObject on a saber then FixShaderOnMaterial on the saber's trails, 
+// the second call is missing important material context from the first call
+
 // Async
 await ShaderRepair.FixShadersOnGameObjectAsync(gameObject);
 await ShaderRepair.FixShadersOnMaterialsAsync(materials);
@@ -81,7 +115,6 @@ ShaderRepair.FixShaderOnMaterial(material);
 # TODO:
 - Reformat project so only the absolute necessities (some public APIs in Utilities) are static (maybe use DI too)
 - Upgrade `.shaderbundle` "web service" from requesting GitHub to actual proper web service
-- Change ShaderRepair method return types to actual useful information
 - Add multiple types of default "invalid" shaders and a config option to toggle between. Current is just invisible
 - Add ShaderBundleExporter `.unitypackage` to repo, preferably in a dev Unity Project
 - Look into ThryEditor compatibilty for ShaderBundleExporter
