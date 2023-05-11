@@ -4,6 +4,7 @@
         "builtin.shaderbundle",
         "bobbie-project.shaderbundle",
         "main.shaderbundle",
-        "invalid.shaderbundle"
+        "invalid.shaderbundle",
+        "raz0r.shaderbundle"
     ]
 }
